@@ -32,18 +32,29 @@ private:
 
 	GLuint m_VBORect = 0;
 	GLuint m_SolidRectShader = 0;
+		// 사용할 쉐이더 프로그램의 ID
 
 	// //////////////////////////////////////////////////////////////////////////
 private:
 	void Class0310();
+	void CreateParticleVBO();
 
 public:
 	void Class0310_Rendering();
+	void DrawParticle();
 
 private:
 	GLuint m_testVBO = 0;
 	float m_fScale = 0.f;
 	float m_fAdd = 0.01f;
+
+private:
+	GLuint m_ParticleVBO = 0;
+	GLuint m_ParticleColorVBO = 0;
+	GLuint m_ParticleVertexCount = -1;
+
+private:
+	GLuint m_ParticleShader = -1;
 	// //////////////////////////////////////////////////////////////////////////
 };
 

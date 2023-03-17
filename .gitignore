@@ -29,6 +29,7 @@ bld/
 *.pdb
 *.tlog
 *.idb
+*.exe.recipe
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
