@@ -36,21 +36,18 @@ private:
 
 	// //////////////////////////////////////////////////////////////////////////
 private:
-	void Class0310();
-	void CreateParticleVBO();
+	void CreateParticleVBO(int numParticleCount);
 
 public:
-	void Class0310_Rendering();
 	void DrawParticle();
 
 private:
-	GLuint m_testVBO = 0;
-	float m_fScale = 0.f;
-	float m_fAdd = 0.01f;
+	float m_fTime = 0.f;
 
 private:
 	GLuint m_ParticleVBO = 0;
 	GLuint m_ParticleColorVBO = 0;
+	GLuint m_ParticleSpeedVBO = 0;
 	GLuint m_ParticleVertexCount = -1;
 
 private:
