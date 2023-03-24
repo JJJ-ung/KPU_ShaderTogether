@@ -199,6 +199,7 @@ void Renderer::CreateParticleVBO(int numParticleCount)
 	int particleCount = numParticleCount;
 	int floatCount = 3;
 	int totalFloatCount = particleCount * vertexCount * floatCount;
+	int totalFloatCountSingle = particleCount * vertexCount * 1;
 
 	m_ParticleVertexCount = particleCount * vertexCount;
 
@@ -210,8 +211,8 @@ void Renderer::CreateParticleVBO(int numParticleCount)
 	int index = 0;
 	for(int i = 0; i < numParticleCount ; ++i)
 	{
-		float particleCenterY = 2.f * (float(rand()) / RAND_MAX) - 1.f;
-		float particleCenterX = 2.f * (float(rand())/RAND_MAX) - 1.f;
+		float particleCenterY = 0.f;
+		float particleCenterX = 0.f;
 		// -1 에서 1 사이 랜덤 값이 나옴
 
 		vertices[index] = particleCenterX - particleSize;		index++;
@@ -239,6 +240,8 @@ void Renderer::CreateParticleVBO(int numParticleCount)
 	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * totalFloatCount, vertices, GL_STATIC_DRAW);
 
+	delete[] vertices;
+
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	float* speed = NULL;
@@ -251,7 +254,7 @@ void Renderer::CreateParticleVBO(int numParticleCount)
 		float velY = 2.f * (float(rand()) / RAND_MAX) - 1.f;
 		// -1 에서 1 사이 랜덤 값이 나옴
 
-		for(int j = 0; j < 6; ++j)
+		for(int j = 0; j < vertexCount; ++j)
 		{
 			speed[index] = velX;		index++;
 			speed[index] = velY;		index++;
@@ -263,9 +266,54 @@ void Renderer::CreateParticleVBO(int numParticleCount)
 	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleSpeedVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * totalFloatCount, speed, GL_STATIC_DRAW);
 
-	// 이미 gpu 메모리에 올라갔으니 cpu에 남아있찌 않아도 됨
-	delete vertices;
-	delete speed;
+	delete[] speed;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	float* emitTime = NULL;
+	emitTime = new float[totalFloatCountSingle];
+
+	index = 0;
+	for (int i = 0; i < numParticleCount; ++i)
+	{
+		float fEmitTime = 10.f * (float(rand()) / RAND_MAX);
+
+		for (int j = 0; j < vertexCount; ++j)
+		{
+			emitTime[index] = fEmitTime;
+			index++;
+		}
+	}
+
+	glGenBuffers(1, &m_ParticleEmitTimeVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleEmitTimeVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * totalFloatCountSingle, emitTime, GL_STATIC_DRAW);
+
+	delete[] emitTime;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	float* lifeTime = NULL;
+	lifeTime = new float[totalFloatCountSingle];
+
+	index = 0;
+	for (int i = 0; i < numParticleCount; ++i)
+	{
+		float fLifeTime = 1.f * (float(rand()) / RAND_MAX);
+
+		for (int j = 0; j < vertexCount; ++j)
+		{
+			lifeTime[index] = fLifeTime;
+			index++;
+		}
+	}
+
+	glGenBuffers(1, &m_ParticleLifeTimeVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleLifeTimeVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * totalFloatCountSingle, lifeTime, GL_STATIC_DRAW);
+
+	delete[] lifeTime;
+
 }
 
 void Renderer::DrawParticle()
@@ -273,24 +321,42 @@ void Renderer::DrawParticle()
 	GLuint program = m_ParticleShader;	// ID
 	glUseProgram(program);
 
+	//
 	int posLoc = glGetAttribLocation(program, "a_Position");
 	glEnableVertexAttribArray(posLoc);
 	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleVBO);
 	glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	//
 
+	//
 	int velLoc = glGetAttribLocation(program, "a_Speed");
 	glEnableVertexAttribArray(velLoc);
 	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleSpeedVBO);
 	glVertexAttribPointer(velLoc, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	//
 
+	//
+	int emitTimeLoc = glGetAttribLocation(program, "a_EmitTime");
+	glEnableVertexAttribArray(emitTimeLoc);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleEmitTimeVBO);
+	glVertexAttribPointer(emitTimeLoc, 1, GL_FLOAT, GL_FALSE, 0, 0);
+	//
+
+	//
+	int lifeTimeLoc = glGetAttribLocation(program, "a_LifeTime");
+	glEnableVertexAttribArray(lifeTimeLoc);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleLifeTimeVBO);
+	glVertexAttribPointer(lifeTimeLoc, 1, GL_FLOAT, GL_FALSE, 0, 0);
+	//
+
+	//
 	int timeLoc = glGetUniformLocation(program, "u_Time");
 	glUniform1f(timeLoc, m_fTime);
 	int accelLoc = glGetUniformLocation(program, "u_Accel");
-	glUniform3f(accelLoc, 0.f, -2.8f, 0.f);
+	glUniform3f(accelLoc, 0.f, -0.1f, 0.f);
+	//
 
-	m_fTime += 0.008;
-	if (m_fTime > 1000.f)
-		m_fTime = 0.f;
+	m_fTime += 0.03f;
 
 	glDrawArrays(GL_TRIANGLES, 0, m_ParticleVertexCount);
 		// 갯수는 정확히 : 다른 메모리 공간이 침범될수도 있음 (프로그램 죽음)

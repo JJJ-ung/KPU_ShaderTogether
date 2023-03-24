@@ -48,6 +48,10 @@ private:
 	GLuint m_ParticleVBO = 0;
 	GLuint m_ParticleColorVBO = 0;
 	GLuint m_ParticleSpeedVBO = 0;
+	GLuint m_ParticleEmitTimeVBO = 0;
+	GLuint m_ParticleLifeTimeVBO = 0;
+
+private:
 	GLuint m_ParticleVertexCount = -1;
 
 private:
