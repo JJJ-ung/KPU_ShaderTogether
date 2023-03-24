@@ -29,7 +29,7 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 		m_Initialized = true;
 	}
 
-	CreateParticleVBO(1000);
+	CreateParticleVBO(1);
 }
 
 bool Renderer::IsInitialized()
