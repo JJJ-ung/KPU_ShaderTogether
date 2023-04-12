@@ -24,12 +24,12 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	//Create VBOs
 	CreateVertexBufferObjects();
 
+	CreateParticleVBO(1000);
+
 	if (m_SolidRectShader > 0 && m_VBORect > 0)
 	{
 		m_Initialized = true;
 	}
-
-	CreateParticleVBO(1);
 }
 
 bool Renderer::IsInitialized()
@@ -314,6 +314,77 @@ void Renderer::CreateParticleVBO(int numParticleCount)
 
 	delete[] lifeTime;
 
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	float* randAmp = NULL;
+	randAmp = new float[totalFloatCountSingle];
+
+	index = 0;
+	for (int i = 0; i < numParticleCount; ++i)
+	{
+		float fRand = 1.f * (2.f * (float(rand()) / RAND_MAX) - 1.f);
+
+		for (int j = 0; j < vertexCount; ++j)
+		{
+			randAmp[index] = fRand;
+			index++;
+		}
+	}
+
+	glGenBuffers(1, &m_ParticleAmpVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleAmpVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * totalFloatCountSingle, randAmp, GL_STATIC_DRAW);
+
+	delete[] randAmp;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	float* randPeriod = NULL;
+	randPeriod = new float[totalFloatCountSingle];
+
+	index = 0;
+	for (int i = 0; i < numParticleCount; ++i)
+	{
+		float fRand = 2.f * (float(rand()) / RAND_MAX) - 1.f;
+
+		for (int j = 0; j < vertexCount; ++j)
+		{
+			randPeriod[index] = fRand;
+			index++;
+		}
+	}
+
+	glGenBuffers(1, &m_ParticlePeriodVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticlePeriodVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * totalFloatCountSingle, randPeriod, GL_STATIC_DRAW);
+
+	delete[] randPeriod;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	float* verticeValue = NULL;
+	verticeValue = new float[totalFloatCountSingle];
+
+	index = 0;
+	for (int i = 0; i < numParticleCount; ++i)
+	{
+		float value = 1.f * (float(rand()) / RAND_MAX);
+
+		for (int j = 0; j < vertexCount; ++j)
+		{
+			verticeValue[index] = value;
+			index++;
+		}
+	}
+
+	glGenBuffers(1, &m_ParticleValueVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleValueVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * totalFloatCountSingle, verticeValue, GL_STATIC_DRAW);
+
+	delete[] verticeValue;
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 }
 
 void Renderer::DrawParticle()
@@ -350,13 +421,34 @@ void Renderer::DrawParticle()
 	//
 
 	//
+	int ampLoc = glGetAttribLocation(program, "a_Amp");
+	glEnableVertexAttribArray(ampLoc);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleAmpVBO);
+	glVertexAttribPointer(ampLoc, 1, GL_FLOAT, GL_FALSE, 0, 0);
+	//
+
+	//
+	int periodLoc = glGetAttribLocation(program, "a_Period");
+	glEnableVertexAttribArray(periodLoc);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticlePeriodVBO);
+	glVertexAttribPointer(periodLoc, 1, GL_FLOAT, GL_FALSE, 0, 0);
+	//
+
+	//
 	int timeLoc = glGetUniformLocation(program, "u_Time");
 	glUniform1f(timeLoc, m_fTime);
 	int accelLoc = glGetUniformLocation(program, "u_Accel");
 	glUniform3f(accelLoc, 0.f, -0.1f, 0.f);
 	//
 
-	m_fTime += 0.03f;
+	//
+	int valueLoc = glGetAttribLocation(program, "a_Value");
+	glEnableVertexAttribArray(valueLoc);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleValueVBO);
+	glVertexAttribPointer(valueLoc, 1, GL_FLOAT, GL_FALSE, 0, 0);
+	//
+
+	m_fTime += 0.01f;
 
 	glDrawArrays(GL_TRIANGLES, 0, m_ParticleVertexCount);
 		// 갯수는 정확히 : 다른 메모리 공간이 침범될수도 있음 (프로그램 죽음)
