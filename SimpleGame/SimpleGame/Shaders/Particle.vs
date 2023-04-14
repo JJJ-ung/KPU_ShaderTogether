@@ -2,6 +2,8 @@
 
 in vec3 a_Position;
 in vec4 a_Color;
+in vec2 a_Texcoord;
+
 in vec3 a_Vel;
 in float a_EmitTime;
 in float a_LifeTime;
@@ -49,7 +51,7 @@ vec4 GraphSin()
 		alpha = 1.f - newT/a_LifeTime;
 		alpha = pow(alpha, 0.5);
 	}
-
+	v_Texcoord = a_Texcoord;
 	v_Color = vec4(a_Color.rgb, a_Color.a * alpha);
 	return newPos;
 }

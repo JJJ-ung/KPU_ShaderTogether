@@ -252,13 +252,19 @@ void Renderer::DrawParticle()
 	glEnableVertexAttribArray(posLoc);
 	int colorLoc = glGetAttribLocation(program, "a_Color");
 	glEnableVertexAttribArray(colorLoc);
-	glBindBuffer(GL_ARRAY_BUFFER, m_ParticlePosColVBO);
+	int texLoc = glGetAttribLocation(program, "a_Texcoord");
+	glEnableVertexAttribArray(texLoc);
+	//glBindBuffer(GL_ARRAY_BUFFER, m_ParticlePosColVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticlePosColTexcoordVBO);
 	glVertexAttribPointer(posLoc, 3, GL_FLOAT,
 		GL_FALSE,
-		sizeof(float)*7, 0);
+		sizeof(float)*9, 0);
 	glVertexAttribPointer(colorLoc, 4, GL_FLOAT, 
 		GL_FALSE,
-		sizeof(float) * 7, (GLvoid*)(sizeof(float)*3));
+		sizeof(float) * 9, (GLvoid*)(sizeof(float)*3));
+	glVertexAttribPointer(texLoc, 2, GL_FLOAT,
+		GL_FALSE,
+		sizeof(float) * 9, (GLvoid*)(sizeof(float) * 7));
 
 	int velLoc = glGetAttribLocation(program, "a_Vel");
 	glEnableVertexAttribArray(velLoc);
@@ -321,6 +327,18 @@ void Renderer::DrawFragmentSandbox()
 	glBindBuffer(GL_ARRAY_BUFFER, m_FragmentSandboxVBO);
 	glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 5.f, 0);
 	glVertexAttribPointer(texLoc, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 5.f, (GLvoid*)(sizeof(float) * 3));
+
+	int pointULoc = glGetUniformLocation(shader, "u_Point");
+	glUniform2f(pointULoc, 0.3f, 0.3f);
+
+	int pointsULoc = glGetUniformLocation(shader, "u_Points");
+	float points[] = { 0.1, 0.1, 0.5, 0.5, 0.8, 0.8 };
+	glUniform2fv(pointsULoc, 3, points);	// unifrom array 쉐이더에 넘겨주기
+
+	int timeLoc = glGetUniformLocation(shader, "u_Time");
+	glUniform1f(timeLoc, g_time);
+
+	g_time += 0.08;
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
@@ -391,7 +409,7 @@ void Renderer::CreateParticleVBO(int numParticleCount)
 	float* vertices = NULL;
 	vertices = new float[totalFloatCount];
 
-	float particleSize = 0.01f;
+	float particleSize = 0.05f;
 
 	int index = 0;
 	for (int i = 0; i < numParticleCount; i++)
@@ -621,11 +639,12 @@ void Renderer::CreateParticleVBO(int numParticleCount)
 	delete[] verticesColor;
 	   	  
 	//pos+color vbo
+	/*
 	int totalFloatCountPosCol = numParticleCount * 6 *
 		(3 + 4);
 	float* verticesPosColor = NULL;
 	verticesPosColor = new float[totalFloatCountPosCol];
-	
+
 	index = 0;
 	for (int i = 0; i < numParticleCount; i++)
 	{
@@ -690,4 +709,88 @@ void Renderer::CreateParticleVBO(int numParticleCount)
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*totalFloatCountPosCol,
 		verticesPosColor, GL_STATIC_DRAW);
 	delete[] verticesPosColor;
+	 */
+
+	//pos+color+UV vbo
+	int totalFloatCountPosColTex = numParticleCount * 6 *
+		(3 + 4 + 2);
+	float* verticesPosColorTex = NULL;
+	verticesPosColorTex = new float[totalFloatCountPosColTex];
+
+	index = 0;
+	for (int i = 0; i < numParticleCount; i++)
+	{
+		float particelCenterX = 0.f; // 2.f*(((float)rand() / (float)RAND_MAX) - 0.5f);
+		float particelCenterY = 0.f; // 2.f*(((float)rand() / (float)RAND_MAX) - 0.5f);
+		float r = 1.f * ((float)rand() / (float)RAND_MAX);
+		float g = 1.f * ((float)rand() / (float)RAND_MAX);
+		float b = 1.f * ((float)rand() / (float)RAND_MAX);
+		float a = 1.f * ((float)rand() / (float)RAND_MAX);
+
+		verticesPosColorTex[index] = particelCenterX - particleSize; index++;
+		verticesPosColorTex[index] = particelCenterY + particleSize; index++;
+		verticesPosColorTex[index] = 0.f; index++;
+		verticesPosColorTex[index] = r; index++;
+		verticesPosColorTex[index] = g; index++;
+		verticesPosColorTex[index] = b; index++;
+		verticesPosColorTex[index] = a; index++;//v1
+		verticesPosColorTex[index] = 0.f; index++;
+		verticesPosColorTex[index] = 1.f; index++;//v1
+
+		verticesPosColorTex[index] = particelCenterX - particleSize; index++;
+		verticesPosColorTex[index] = particelCenterY - particleSize; index++;
+		verticesPosColorTex[index] = 0.f; index++;
+		verticesPosColorTex[index] = r; index++;
+		verticesPosColorTex[index] = g; index++;
+		verticesPosColorTex[index] = b; index++;
+		verticesPosColorTex[index] = a; index++;//v2
+		verticesPosColorTex[index] = 0.f; index++;
+		verticesPosColorTex[index] = 0.f; index++;//v1
+
+		verticesPosColorTex[index] = particelCenterX + particleSize; index++;
+		verticesPosColorTex[index] = particelCenterY + particleSize; index++;
+		verticesPosColorTex[index] = 0.f; index++;
+		verticesPosColorTex[index] = r; index++;
+		verticesPosColorTex[index] = g; index++;
+		verticesPosColorTex[index] = b; index++;
+		verticesPosColorTex[index] = a; index++;//v3
+		verticesPosColorTex[index] = 1.f; index++;
+		verticesPosColorTex[index] = 1.f; index++;//v1
+
+		verticesPosColorTex[index] = particelCenterX + particleSize; index++;
+		verticesPosColorTex[index] = particelCenterY + particleSize; index++;
+		verticesPosColorTex[index] = 0.f; index++;
+		verticesPosColorTex[index] = r; index++;
+		verticesPosColorTex[index] = g; index++;
+		verticesPosColorTex[index] = b; index++;
+		verticesPosColorTex[index] = a; index++;//v4
+		verticesPosColorTex[index] = 1.f; index++;
+		verticesPosColorTex[index] = 1.f; index++;//v1
+
+		verticesPosColorTex[index] = particelCenterX - particleSize; index++;
+		verticesPosColorTex[index] = particelCenterY - particleSize; index++;
+		verticesPosColorTex[index] = 0.f; index++;
+		verticesPosColorTex[index] = r; index++;
+		verticesPosColorTex[index] = g; index++;
+		verticesPosColorTex[index] = b; index++;
+		verticesPosColorTex[index] = a; index++;//v5
+		verticesPosColorTex[index] = 0.f; index++;
+		verticesPosColorTex[index] = 0.f; index++;//v1
+
+		verticesPosColorTex[index] = particelCenterX + particleSize; index++;
+		verticesPosColorTex[index] = particelCenterY - particleSize; index++;
+		verticesPosColorTex[index] = 0.f; index++;
+		verticesPosColorTex[index] = r; index++;
+		verticesPosColorTex[index] = g; index++;
+		verticesPosColorTex[index] = b; index++;
+		verticesPosColorTex[index] = a; index++;//v6
+		verticesPosColorTex[index] = 1.f; index++;
+		verticesPosColorTex[index] = 0.f; index++;//v1
+	}
+
+	glGenBuffers(1, &m_ParticlePosColTexcoordVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticlePosColTexcoordVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * totalFloatCountPosColTex,
+		verticesPosColorTex, GL_STATIC_DRAW);
+	delete[] verticesPosColorTex;
 }

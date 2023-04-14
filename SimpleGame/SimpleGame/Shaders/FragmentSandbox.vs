@@ -3,7 +3,7 @@
 in vec3 a_Position;
 in vec2 a_Texcoord;
 
-varying vec2 v_Texcoord;
+out vec2 v_Texcoord;
 
 void main()
 {
