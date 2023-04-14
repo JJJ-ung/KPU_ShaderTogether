@@ -15,7 +15,9 @@ public:
 
 	bool IsInitialized();
 	void DrawSolidRect(float x, float y, float z, float size, float r, float g, float b, float a);
-
+	void Class0310_Rendering();
+	void DrawParticle();
+	void DrawFragmentSandbox();
 private:
 	void Initialize(int windowSizeX, int windowSizeY);
 	bool ReadFile(char* filename, std::string *target);
@@ -23,42 +25,37 @@ private:
 	GLuint CompileShaders(char* filenameVS, char* filenameFS);
 	void CreateVertexBufferObjects();
 	void GetGLPosition(float x, float y, float *newX, float *newY);
+	void Class0310();
+	void CreateParticleVBO(int numParticleCount);
+	GLuint m_ParticleShader = -1;
+	GLuint m_ParticleVBO = -1;
+	GLuint m_ParticleVelVBO = -1;
+	GLuint m_ParticleEmitTimeVBO = -1;
+	GLuint m_ParticleLifeTimeVBO = -1;
+	GLuint m_ParticlePeriodVBO = -1;
+	GLuint m_ParticleAmpVBO = -1;
+	GLuint m_ParticleValueVBO = -1;
+	GLuint m_ParticleColorVBO = -1;
+	GLuint m_ParticlePosColVBO = -1;
+	GLuint m_ParticleVertexCount = -1;
 
-private:
 	bool m_Initialized = false;
-
+	
 	unsigned int m_WindowSizeX = 0;
 	unsigned int m_WindowSizeY = 0;
 
 	GLuint m_VBORect = 0;
 	GLuint m_SolidRectShader = 0;
-		// 사용할 쉐이더 프로그램의 ID
 
-	// //////////////////////////////////////////////////////////////////////////
-private:
-	void CreateParticleVBO(int numParticleCount);
+	GLuint m_testVBO = 0;
+	GLuint m_testVBO1 = 0;
+	GLuint m_ColorVBO = 0;
 
-public:
-	void DrawParticle();
 
-private:
-	float m_fTime = 0.f;
+	// for fragment sandbox
+	GLuint m_FragmentSandboxShader = 0;
+	GLuint m_FragmentSandboxVBO = 0;
 
-private:
-	GLuint m_ParticleVBO = 0;
-	GLuint m_ParticleColorVBO = 0;
-	GLuint m_ParticleSpeedVBO = 0;
-	GLuint m_ParticleEmitTimeVBO = 0;
-	GLuint m_ParticleLifeTimeVBO = 0;
-	GLuint m_ParticleAmpVBO = 0;
-	GLuint m_ParticlePeriodVBO = 0;
-	GLuint m_ParticleValueVBO = 0;
 
-private:
-	GLuint m_ParticleVertexCount = -1;
-
-private:
-	GLuint m_ParticleShader = -1;
-	// //////////////////////////////////////////////////////////////////////////
 };
 
