@@ -19,6 +19,7 @@ public:
 	void DrawParticle();
 	void DrawFragmentSandbox();
 	void DrawAlphaClear();
+	void DrawVertexSandbox();
 
 private:
 	void Initialize(int windowSizeX, int windowSizeY);
@@ -63,5 +64,10 @@ private:
 	// for Trail
 	GLuint m_AlphaClearShader = 0;
 	GLuint m_AlphaClearVBO = 0;
+
+	// for vertex anim
+	GLuint m_VertexSandboxShader = 0;
+	GLuint m_HorizontalLineVBO = 0;
+	GLuint m_HorizontalLineVertexCount = 0;
 };
 

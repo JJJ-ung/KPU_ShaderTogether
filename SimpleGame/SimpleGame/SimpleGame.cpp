@@ -24,13 +24,14 @@ void RenderScene(void)
 {
 	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.0f, 0.f, 0.f, 1.0f);
+	g_Renderer->DrawAlphaClear();	// 버퍼 클리어를 대신하는 애 : 잔상 만들기
 
 	// Renderer Test
 	//g_Renderer->DrawSolidRect(0, 0, 0, 4, 1, 0, 1, 1);
 	//g_Renderer->Class0310_Rendering();
 	//g_Renderer->DrawParticle();
-	g_Renderer->DrawAlphaClear();	// 버퍼 클리어를 대신하는 애 : 잔상 만들기
-	g_Renderer->DrawFragmentSandbox();
+	//g_Renderer->DrawFragmentSandbox();
+	g_Renderer->DrawVertexSandbox();
 	glutSwapBuffers();
 }
 

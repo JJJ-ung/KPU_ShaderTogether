@@ -23,6 +23,7 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	m_ParticleShader = CompileShaders("./Shaders/Particle.vs", "./Shaders/Particle.fs");
 	m_FragmentSandboxShader = CompileShaders("./Shaders/FragmentSandbox.vs", "./Shaders/FragmentSandbox.fs");
 	m_AlphaClearShader = CompileShaders("./Shaders/AlphaClear.vs", "./Shaders/AlphaClear.fs");
+	m_VertexSandboxShader = CompileShaders("./Shaders/VertexSandbox.vs", "./Shaders/VertexSandbox.fs");
 
 	//Create VBOs
 	CreateVertexBufferObjects();
@@ -73,6 +74,21 @@ void Renderer::CreateVertexBufferObjects()
 	glGenBuffers(1, &m_AlphaClearVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_AlphaClearVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(rect2), rect2, GL_STATIC_DRAW);
+
+	m_HorizontalLineVertexCount = 10;
+	float* verticesLine = new float[m_HorizontalLineVertexCount * 3];
+	float gap = 2.f / (float(m_HorizontalLineVertexCount - 1.f));
+	int index = 0;
+	for(int i = 0; i < m_HorizontalLineVertexCount; i++)
+	{
+		verticesLine[index] = (float)i * gap - 1.f; index++;
+		verticesLine[index] = 0.f; index++;
+		verticesLine[index] = 0.f; index++;
+	}
+	glGenBuffers(1, &m_HorizontalLineVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_HorizontalLineVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) *(m_HorizontalLineVertexCount * 3), verticesLine, GL_STATIC_DRAW);
+	delete[] verticesLine;
 }
 
 void Renderer::AddShader(GLuint ShaderProgram, const char* pShaderText, GLenum ShaderType)
@@ -373,6 +389,18 @@ void Renderer::DrawAlphaClear()
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
+void Renderer::DrawVertexSandbox()
+{
+	GLuint shader = m_VertexSandboxShader;
+	glUseProgram(shader);
+
+	int posLoc = glGetAttribLocation(shader, "a_Position");
+	glEnableVertexAttribArray(posLoc);
+	glBindBuffer(GL_ARRAY_BUFFER, m_HorizontalLineVBO);
+	glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glDrawArrays(GL_LINE_STRIP, 0, m_HorizontalLineVertexCount);
+}
+
 void Renderer::GetGLPosition(float x, float y, float *newX, float *newY)
 {
 	*newX = x * 2.f / m_WindowSizeX;
@@ -439,7 +467,7 @@ void Renderer::CreateParticleVBO(int numParticleCount)
 	float* vertices = NULL;
 	vertices = new float[totalFloatCount];
 
-	float particleSize = 0.05f;
+	float particleSize = 0.01f;
 
 	int index = 0;
 	for (int i = 0; i < numParticleCount; i++)
