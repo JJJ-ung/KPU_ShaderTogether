@@ -170,6 +170,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Shaders\AlphaClear.fs" />
+    <None Include="Shaders\AlphaClear.vs" />
     <None Include="Shaders\FragmentSandbox.fs" />
     <None Include="Shaders\FragmentSandbox.vs" />
     <None Include="Shaders\Particle.fs" />

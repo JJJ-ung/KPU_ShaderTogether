@@ -18,6 +18,8 @@ public:
 	void Class0310_Rendering();
 	void DrawParticle();
 	void DrawFragmentSandbox();
+	void DrawAlphaClear();
+
 private:
 	void Initialize(int windowSizeX, int windowSizeY);
 	bool ReadFile(char* filename, std::string *target);
@@ -58,6 +60,8 @@ private:
 	GLuint m_FragmentSandboxShader = 0;
 	GLuint m_FragmentSandboxVBO = 0;
 
-
+	// for Trail
+	GLuint m_AlphaClearShader = 0;
+	GLuint m_AlphaClearVBO = 0;
 };
 

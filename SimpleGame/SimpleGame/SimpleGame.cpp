@@ -17,15 +17,19 @@ but WITHOUT ANY WARRANTY.
 
 Renderer *g_Renderer = NULL;
 
+int g_WindowSizeX = 1024;
+int g_WindowSizeY = 1024;
+
 void RenderScene(void)
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.0f, 0.f, 0.f, 1.0f);
 
 	// Renderer Test
 	//g_Renderer->DrawSolidRect(0, 0, 0, 4, 1, 0, 1, 1);
 	//g_Renderer->Class0310_Rendering();
 	//g_Renderer->DrawParticle();
+	g_Renderer->DrawAlphaClear();	// 버퍼 클리어를 대신하는 애 : 잔상 만들기
 	g_Renderer->DrawFragmentSandbox();
 	glutSwapBuffers();
 }
@@ -56,7 +60,7 @@ int main(int argc, char **argv)
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowPosition(0, 0);
-	glutInitWindowSize(500, 500);
+	glutInitWindowSize(g_WindowSizeX, g_WindowSizeY);
 	glutCreateWindow("Game Software Engineering KPU");
 
 	glewInit();
@@ -70,7 +74,7 @@ int main(int argc, char **argv)
 	}
 
 	// Initialize Renderer
-	g_Renderer = new Renderer(500, 500);
+	g_Renderer = new Renderer(g_WindowSizeX, g_WindowSizeY);
 	if (!g_Renderer->IsInitialized())
 	{
 		std::cout << "Renderer could not be initialized.. \n";

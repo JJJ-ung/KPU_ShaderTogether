@@ -22,6 +22,8 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	m_SolidRectShader = CompileShaders("./Shaders/SolidRect.vs", "./Shaders/SolidRect.fs");
 	m_ParticleShader = CompileShaders("./Shaders/Particle.vs", "./Shaders/Particle.fs");
 	m_FragmentSandboxShader = CompileShaders("./Shaders/FragmentSandbox.vs", "./Shaders/FragmentSandbox.fs");
+	m_AlphaClearShader = CompileShaders("./Shaders/AlphaClear.vs", "./Shaders/AlphaClear.fs");
+
 	//Create VBOs
 	CreateVertexBufferObjects();
 	CreateParticleVBO(10000);
@@ -58,6 +60,19 @@ void Renderer::CreateVertexBufferObjects()
 	glGenBuffers(1, &m_FragmentSandboxVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_FragmentSandboxVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(rect1), rect1, GL_STATIC_DRAW);
+	float rect2[]
+		=
+	{
+		-1.f,-1.f,0.f,
+		-1.f,1.f,0.f,
+		1.f,1.f,0.f,
+		-1.f,-1.f,0.f,
+		1.f,1.f,0.f,
+		1.f,-1.f,0.f
+	};
+	glGenBuffers(1, &m_AlphaClearVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_AlphaClearVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(rect2), rect2, GL_STATIC_DRAW);
 }
 
 void Renderer::AddShader(GLuint ShaderProgram, const char* pShaderText, GLenum ShaderType)
@@ -338,8 +353,23 @@ void Renderer::DrawFragmentSandbox()
 	int timeLoc = glGetUniformLocation(shader, "u_Time");
 	glUniform1f(timeLoc, g_time);
 
-	g_time += 0.08;
+	g_time += 0.008;
 
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+void Renderer::DrawAlphaClear()
+{
+	GLuint shader = m_AlphaClearShader;
+	glUseProgram(shader);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	int posLoc = glGetAttribLocation(shader, "a_Position");
+	glEnableVertexAttribArray(posLoc);
+	glBindBuffer(GL_ARRAY_BUFFER, m_AlphaClearVBO);
+	glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 

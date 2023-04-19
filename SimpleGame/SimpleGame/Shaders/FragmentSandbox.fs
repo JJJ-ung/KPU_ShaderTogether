@@ -38,24 +38,23 @@ void circles()
 
 void radar()
 {
-    vec2 newValue = v_Texcoord - vec2(0.5, 0.5);
+    vec2 newValue = v_Texcoord - vec2(0.5, 1.0);
     float d = length(newValue);
-    float ring_mask = ceil(sin(d * c_PI * 4 - u_Time) - 0.95);
-    //FragColor = vec4(sin(d * c_PI * 4 - u_Time));
+    float value = sin(2 * d * c_PI - 13 *  u_Time) - 0.9;
+    float ring_mask = ceil(value);
 
     float obj_mask = 0.f;
     for(int i = 0; i < 3; ++i)
     {
         vec2 tmp = v_Texcoord - u_Points[i];
         float d = length(tmp);
-        if(d < 0.1)
+        if(d < 0.03)
         {
             obj_mask += 1.0;
         }
     }
-    //FragColor = vec4(value);
 
-    float res = ring_mask * obj_mask;
+    float res = ring_mask * obj_mask + 10 * value;
     FragColor = vec4(res);
 }
 
