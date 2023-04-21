@@ -57,8 +57,39 @@ void radar()
     float res = ring_mask * obj_mask + 10 * value;
     FragColor = vec4(res);
 }
+void UVTest()
+{
+  FragColor = vec4(0);
+  float powValue = 10;
+  float sinResultX = pow(sin(v_Texcoord.x * 10 * c_PI),powValue);
+  float sinResultY = pow(sin(v_Texcoord.y * 10 * c_PI),powValue);
+  float finalResult = max(sinResultX,sinResultY);
+  FragColor = vec4(finalResult);
 
+}
+void sinGraph()
+{
+    FragColor = vec4(0);
+    for(int i = 0;i<5;++i)
+    {
+        float newTime = u_Time + i*0.2;
+    
+        vec2 newUV = vec2(v_Texcoord.x,2.0f*(v_Texcoord.y - 0.5));
+        float newInput = v_Texcoord.x * 2 * c_PI + c_PI;
+        float sinValue = v_Texcoord.x * (sin(newInput - newTime));
+        float width = 0.005;
+        float newAlpha =1.0f - v_Texcoord.x;
+        float newLines = sin(v_Texcoord.x * 200.0f + newTime * 0.5);
+        if(newUV.y > sinValue && newUV.y < sinValue+width)
+        {
+            FragColor += vec4(1.0*newAlpha * newLines);
+        }
+    }
+}
 void main()
 {
-    radar();
+    sinGraph();
+
+    //UVTest();
+    //radar();
 }

@@ -339,7 +339,7 @@ void Renderer::DrawParticle()
 	int accelLoc = glGetUniformLocation(program, "u_Accel");
 	glUniform3f(accelLoc, 0.f, -2.8f, 0.f);
 
-	g_time += 0.01;
+	g_time += 0.001;
 
 	glDrawArrays(GL_TRIANGLES, 0, m_ParticleVertexCount);
 }
@@ -369,7 +369,7 @@ void Renderer::DrawFragmentSandbox()
 	int timeLoc = glGetUniformLocation(shader, "u_Time");
 	glUniform1f(timeLoc, g_time);
 
-	g_time += 0.008;
+	g_time += 0.0016;
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
@@ -394,6 +394,7 @@ void Renderer::DrawVertexSandbox()
 	GLuint shader = m_VertexSandboxShader;
 	glUseProgram(shader);
 
+
 	int posLoc = glGetAttribLocation(shader, "a_Position");
 	glEnableVertexAttribArray(posLoc);
 	glBindBuffer(GL_ARRAY_BUFFER, m_HorizontalLineVBO);
@@ -402,10 +403,18 @@ void Renderer::DrawVertexSandbox()
 	int timeLoc = glGetUniformLocation(shader, "u_Time");
 	glUniform1f(timeLoc, g_time);
 
-	g_time += 0.016;
+	g_time += 0.0016;
 
 	glDrawArrays(GL_LINE_STRIP, 0, m_HorizontalLineVertexCount);
-	//	GL_LINE_STRIP : 연속된 입력을 다 연결해주는거
+	for (int i = 0; i < 15; ++i)
+	{
+		glUniform1f(timeLoc, g_time + 0.2*i);
+
+		glDrawArrays(GL_LINE_STRIP, 0, m_HorizontalLineVertexCount);
+	}
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void Renderer::GetGLPosition(float x, float y, float *newX, float *newY)
