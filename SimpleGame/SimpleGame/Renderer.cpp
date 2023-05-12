@@ -833,8 +833,9 @@ void Renderer::DrawTextureSandBox()
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_2D, m_5Texture);
 
-	GLuint samplerULoc = glGetUniformLocation(shader, "u_TexSampler");
-	glUniform1i(samplerULoc, (int)(g_time)%6);
+	int texID[] = { 0, 1 };
+	GLuint samplerULoc = glGetUniformLocation(shader, "u_MultiTexSampler");
+	glUniform1iv(samplerULoc, 2, texID);
 	
 	//glActiveTexture(GL_TEXTURE0);
 	//glBindTexture(GL_TEXTURE_2D, m_CheckerBoardTexture);
