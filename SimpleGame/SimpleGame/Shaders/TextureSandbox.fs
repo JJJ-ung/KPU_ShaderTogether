@@ -68,10 +68,17 @@ void P7()
 	FragColor = texture(u_TexSampler,newTexPos);
 }
 
+void MultiTexture()
+{
+	float x = v_TexPos.x;
+	float y = v_TexPos.y;
+	vec2 newTexPos = vec2(x,y);
+	FragColor = texture(u_TexSampler, newTexPos);
+}
+
 void main()
 {
-	P7();
-	
+	MultiTexture();
 }
 
 //float x = v_TexPos.x;
