@@ -58,7 +58,43 @@ void radar()
     FragColor = vec4(res);
 }
 
+void UVTest()
+{
+    FragColor = vec4(0.0);
+
+    float powValue = 10.0;
+    float sinResultX = pow(sin(v_Texcoord.x * 10 * c_PI), powValue);
+    float sinResultY = pow(sin(v_Texcoord.y * 10 * c_PI), powValue);
+    float sinResult = sin((v_Texcoord.x + v_Texcoord.y) * 10 * c_PI);
+    float finalResult = max(sinResultX, sinResultY);
+    FragColor = vec4(finalResult);
+}
+
+void sinGraph()
+{
+    // 시 험 문 제 이 거 처 럼 사 인 곡 선
+    
+    FragColor = vec4(0.0);
+
+    for(int i = 0; i < 5; ++i)
+    {
+        float newTIme = u_Time + i * 0.2;
+       
+        vec2 newUV = vec2(v_Texcoord.x,2.0f*(v_Texcoord.y - 0.5));
+        float newInput = v_Texcoord.x * 2 * c_PI + c_PI;
+        float sinValue = v_Texcoord.x * (sin(newInput - newTIme * 5.0));
+        float width = 0.005;
+        float newAlpha =1.0f - v_Texcoord.x;
+        float newLines = sin(v_Texcoord.x * 20.0f + newTIme * 50.0);
+        if(newUV.y > sinValue && newUV.y < sinValue+width)
+        {
+            FragColor = vec4(1.0*newAlpha * newLines);
+        }
+    }
+
+}
+
 void main()
 {
-    radar();
+    sinGraph();
 }

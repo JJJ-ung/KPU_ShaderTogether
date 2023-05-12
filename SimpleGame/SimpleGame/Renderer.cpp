@@ -394,6 +394,7 @@ void Renderer::DrawVertexSandbox()
 	GLuint shader = m_VertexSandboxShader;
 	glUseProgram(shader);
 
+
 	int posLoc = glGetAttribLocation(shader, "a_Position");
 	glEnableVertexAttribArray(posLoc);
 	glBindBuffer(GL_ARRAY_BUFFER, m_HorizontalLineVBO);
@@ -406,6 +407,12 @@ void Renderer::DrawVertexSandbox()
 
 	glDrawArrays(GL_LINE_STRIP, 0, m_HorizontalLineVertexCount);
 	//	GL_LINE_STRIP : 연속된 입력을 다 연결해주는거
+
+	for(int i = 0; i < 10; i++)
+	{
+		glUniform1f(timeLoc, g_time + i * 0.2f);
+		glDrawArrays(GL_LINE_STRIP, 0, m_HorizontalLineVertexCount);
+	}
 }
 
 void Renderer::GetGLPosition(float x, float y, float *newX, float *newY)
