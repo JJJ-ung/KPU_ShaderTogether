@@ -1,100 +1,102 @@
 #version 330
 
-in vec4 v_Color;
-
 layout(location=0) out vec4 FragColor;
 
-in vec2 v_Texcoord;
-
-uniform vec2 u_Point;
-uniform vec2 u_Points[3];
+uniform vec4 u_Color;
+uniform vec2 u_point;
+uniform vec2 u_points[3];
 uniform float u_Time;
 
-const float c_PI = 3.141592;
+in vec2 v_UV;
 
-void circle()
+const float PI = 3.141592;
+
+void Circle()
 {
-    // 동그래미 만들기
-    // 반지름 길이보다 짧은놈들은 색칠하고 아닌놈은 밖에 있는거니까 안칠하기
-    vec2 newValue = v_Texcoord - u_Point;        // 가운데 좌표가 0.5니까 0.0으로 맞춰주려고
-    float d = length(newValue); // 벡터의 길이 계산해주는 놈
-    if(d < 0.1f)
-    {
-        FragColor = vec4(v_Texcoord.xy, 0.0, 1.0);
-    }
-    else
-    {
-        FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-    }
+	vec2 newValue = v_UV - u_points[1];
+	float d = length(newValue);
+	if(d<0.1f)
+	{
+		FragColor = vec4(v_UV.xy,0.0,1.0);
+	}
+	else
+	{
+		FragColor = vec4(0);
+	}
 }
 
-void circles()
+void Circles()
 {
-    // 동심원 맨들기
-    vec2 newValue = v_Texcoord - u_Point;        // 가운데 좌표가 0.5니까 0.0으로 맞춰주려고
-    float d = length(newValue); // 벡터의 길이 계산해주는 놈
-    FragColor = vec4(sin(d * 30.f));
+	vec2 newValue = v_UV - u_points[1];
+	float d = length(newValue);
+	FragColor = vec4(sin(10*d*PI));
 }
 
 void radar()
 {
-    vec2 newValue = v_Texcoord - vec2(0.5, 1.0);
-    float d = length(newValue);
-    float value = sin(2 * d * c_PI - 13 *  u_Time) - 0.9;
-    float ring_mask = ceil(value);
+	vec2 newValue = v_UV - vec2(0.5,0.5);
+	float d = length(newValue);
+	float value = sin(2*d*PI -7* u_Time)-0.9;
+	float ring_mask = ceil(value);
 
-    float obj_mask = 0.f;
-    for(int i = 0; i < 3; ++i)
-    {
-        vec2 tmp = v_Texcoord - u_Points[i];
-        float d = length(tmp);
-        if(d < 0.03)
-        {
-            obj_mask += 1.0;
-        }
-    }
+	float obj_mask = 0.0f;
 
-    float res = ring_mask * obj_mask + 10 * value;
-    FragColor = vec4(res);
+	for(int i=0; i<3; ++i)
+	{
+		vec2 temp = v_UV - u_points[i];
+		float d= length(temp);
+		if(d<0.03f)
+		{
+			obj_mask +=1.0;
+		}
+	}
+	FragColor = vec4(ring_mask*obj_mask+10*value);
 }
 
 void UVTest()
 {
-    FragColor = vec4(0.0);
-
-    float powValue = 10.0;
-    float sinResultX = pow(sin(v_Texcoord.x * 10 * c_PI), powValue);
-    float sinResultY = pow(sin(v_Texcoord.y * 10 * c_PI), powValue);
-    float sinResult = sin((v_Texcoord.x + v_Texcoord.y) * 10 * c_PI);
-    float finalResult = max(sinResultX, sinResultY);
-    FragColor = vec4(finalResult);
+	FragColor = vec4(0);
+	float powValue=100;
+	float  sinResultX = pow(sin(v_UV.x * 10 * PI),powValue);
+	float  sinResultY = pow(sin(v_UV.y * 10 * PI),powValue);
+	float finalResult = max(sinResultX,sinResultY);
+	FragColor = vec4(finalResult);
 }
 
 void sinGraph()
 {
-    // 시 험 문 제 이 거 처 럼 사 인 곡 선
-    
-    FragColor = vec4(0.0);
+	FragColor = vec4(0);
+	for(int i=0; i<5; ++i)
+	{
+		float newTime = u_Time + i * 0.2;
+		vec2 newUV = vec2(v_UV.x, 2.0*(v_UV.y-0.5));
+		float newInput = v_UV.x * 2 * PI+PI;
+		float sinValue = v_UV.x * sin(newInput-newTime*5);
+		float width = 0.005;
+		float newAlpha = 1.0-v_UV.x;
+		float newLines = sin(v_UV.x*200.0-newTime*50);
+		if(sinValue < newUV.y && sinValue+width > newUV.y) FragColor += vec4(1.0*newAlpha*newLines);
+	}
+}
 
-    for(int i = 0; i < 5; ++i)
-    {
-        float newTIme = u_Time + i * 0.2;
-       
-        vec2 newUV = vec2(v_Texcoord.x,2.0f*(v_Texcoord.y - 0.5));
-        float newInput = v_Texcoord.x * 2 * c_PI + c_PI;
-        float sinValue = v_Texcoord.x * (sin(newInput - newTIme * 5.0));
-        float width = 0.005;
-        float newAlpha =1.0f - v_Texcoord.x;
-        float newLines = sin(v_Texcoord.x * 20.0f + newTIme * 50.0);
-        if(newUV.y > sinValue && newUV.y < sinValue+width)
-        {
-            FragColor = vec4(1.0*newAlpha * newLines);
-        }
-    }
-
+void testgraph()
+{
+	vec2 newValue = v_UV - u_points[1];
+	float d = length(newValue);
+	if(d<0.5f)
+	{
+		FragColor = vec4(v_UV.xy,0.0,1.0);
+	}
+	else
+	{
+		FragColor = vec4(0);
+	}
 }
 
 void main()
 {
-    sinGraph();
+	sinGraph();
+	//sinGraph();
+	//UVTest();
+	//Circles();
 }

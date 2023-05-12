@@ -16,22 +16,22 @@ but WITHOUT ANY WARRANTY.
 #include "Renderer.h"
 
 Renderer *g_Renderer = NULL;
-
 int g_WindowSizeX = 1024;
 int g_WindowSizeY = 1024;
 
 void RenderScene(void)
 {
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glClearColor(0.0f, 0.f, 0.f, 1.0f);
-	g_Renderer->DrawAlphaClear();	// 버퍼 클리어를 대신하는 애 : 잔상 만들기
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	//g_Renderer->DrawAlphaClear();
 
 	// Renderer Test
 	//g_Renderer->DrawSolidRect(0, 0, 0, 4, 1, 0, 1, 1);
 	//g_Renderer->Class0310_Rendering();
 	//g_Renderer->DrawParticle();
-	g_Renderer->DrawFragmentSandbox();
-	//g_Renderer->DrawVertexSandbox();
+	//g_Renderer->DrawFragmentSandBox();
+	//g_Renderer->DrawVertexSandBox();
+	g_Renderer->DrawTextureSandBox();
 	glutSwapBuffers();
 }
 
@@ -62,7 +62,7 @@ int main(int argc, char **argv)
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowPosition(0, 0);
 	glutInitWindowSize(g_WindowSizeX, g_WindowSizeY);
-	glutCreateWindow("Game Software Engineering KPU");
+	glutCreateWindow("Game Software Engineering TUK");
 
 	glewInit();
 	if (glewIsSupported("GL_VERSION_3_0"))
