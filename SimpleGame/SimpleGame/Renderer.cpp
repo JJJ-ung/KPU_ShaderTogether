@@ -1,5 +1,7 @@
 #include "stdafx.h"
 #include "Renderer.h"
+#include "LoadPng.h"
+#include "assert.h"
 
 Renderer::Renderer(int windowSizeX, int windowSizeY)
 {
@@ -20,14 +22,19 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 
 	//Load shaders
 	m_SolidRectShader = CompileShaders("./Shaders/SolidRect.vs", "./Shaders/SolidRect.fs");
-	m_ParticleShader = CompileShaders("./Shaders/Particle.vs", "./Shaders/Particle.fs");
-	m_FragmentSandboxShader = CompileShaders("./Shaders/FragmentSandbox.vs", "./Shaders/FragmentSandbox.fs");
-	m_AlphaClearShader = CompileShaders("./Shaders/AlphaClear.vs", "./Shaders/AlphaClear.fs");
+	m_ParticleShader = CompileShaders("./Shaders/particle.vs", "./Shaders/particle.fs");
+	m_FragmentSandboxShader = CompileShaders("./Shaders/FragmentSandBox.vs", "./Shaders/FragmentSandBox.fs");
+	m_AlphaClearShader = CompileShaders("./Shaders/Alpha.vs", "./Shaders/Alpha.fs");
 	m_VertexSandboxShader = CompileShaders("./Shaders/VertexSandbox.vs", "./Shaders/VertexSandbox.fs");
-
+	m_TextureSandboxShader = CompileShaders("./Shaders/TextureSandbox.vs", "./Shaders/TextureSandbox.fs");
+	
 	//Create VBOs
 	CreateVertexBufferObjects();
-	CreateParticleVBO(10000);
+	CreateParticleVBO(1000);
+
+	CreateTextures();
+
+	m_RGBTexture = CreatePngTexture("./RGB.png", GL_NEAREST);
 
 	if (m_SolidRectShader > 0 && m_VBORect > 0)
 	{
@@ -42,44 +49,61 @@ bool Renderer::IsInitialized()
 
 void Renderer::CreateVertexBufferObjects()
 {
+	float textureRect[]
+		=
+	{
+		-0.5,0.5,0,			0,0,
+		-0.5,-0.5,0,		0,1,
+		0.5,0.5,0,			1,0,
+		0.5,0.5,0,			1,0,
+		-0.5,-0.5,0,		0,1,
+		0.5,-0.5,0,			1,1
+	};
+	glGenBuffers(1, &m_TextureSandboxVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_TextureSandboxVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(textureRect), textureRect, GL_STATIC_DRAW);
+
 	float rect[]
 		=
 	{
 		-1.f / m_WindowSizeX, -1.f / m_WindowSizeY, 0.f, -1.f / m_WindowSizeX, 1.f / m_WindowSizeY, 0.f, 1.f / m_WindowSizeX, 1.f / m_WindowSizeY, 0.f, //Triangle1
 		-1.f / m_WindowSizeX, -1.f / m_WindowSizeY, 0.f,  1.f / m_WindowSizeX, 1.f / m_WindowSizeY, 0.f, 1.f / m_WindowSizeX, -1.f / m_WindowSizeY, 0.f, //Triangle2
 	};
-	float rect1[]
-		=
+	glGenBuffers(1, &m_VBORect);
+	glBindBuffer(GL_ARRAY_BUFFER, m_VBORect);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(rect), rect, GL_STATIC_DRAW);
+
+	float rect1[] =
 	{
-		-1.f,-1.f,0.f,0.f,1.f,
-		-1.f,1.f,0.f,0.f,0.f,
-		1.f,1.f,0.f,1.f,0.f,
-		-1.f,-1.f,0.f,0.f,1.f,
-		1.f,1.f,0.f,1.f,0.f,
-		1.f,-1.f,0.f,1.f,1.f
+		-1,-1,0,0,1,
+		-1,1,0,0,0,
+		1,1,0,1,0,
+		-1,-1,0,0,1,
+		1,1,0,1,0,
+		1,-1,0,1,1
 	};
 	glGenBuffers(1, &m_FragmentSandboxVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_FragmentSandboxVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(rect1), rect1, GL_STATIC_DRAW);
-	float rect2[]
-		=
+
+	float rect2[] =
 	{
-		-1.f,-1.f,0.f,
-		-1.f,1.f,0.f,
-		1.f,1.f,0.f,
-		-1.f,-1.f,0.f,
-		1.f,1.f,0.f,
-		1.f,-1.f,0.f
+		-1,-1,0,
+		-1,1,0,
+		1,1,0,
+		-1,-1,0,
+		1,1,0,
+		1,-1,0
 	};
 	glGenBuffers(1, &m_AlphaClearVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_AlphaClearVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(rect2), rect2, GL_STATIC_DRAW);
 
-	m_HorizontalLineVertexCount = 50;
+	m_HorizontalLineVertexCount = 100;
 	float* verticesLine = new float[m_HorizontalLineVertexCount * 3];
-	float gap = 2.f / (float(m_HorizontalLineVertexCount - 1.f));
+	float gap = 2.f / ((float)m_HorizontalLineVertexCount -1.f);
 	int index = 0;
-	for(int i = 0; i < m_HorizontalLineVertexCount; i++)
+	for (int i = 0; i < m_HorizontalLineVertexCount; ++i)
 	{
 		verticesLine[index] = (float)i * gap - 1.f; index++;
 		verticesLine[index] = 0.f; index++;
@@ -87,7 +111,7 @@ void Renderer::CreateVertexBufferObjects()
 	}
 	glGenBuffers(1, &m_HorizontalLineVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_HorizontalLineVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) *(m_HorizontalLineVertexCount * 3), verticesLine, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * m_HorizontalLineVertexCount * 3, verticesLine, GL_STATIC_DRAW);
 	delete[] verticesLine;
 }
 
@@ -225,35 +249,401 @@ void Renderer::DrawSolidRect(float x, float y, float z, float size, float r, flo
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-float g_time = 0.f;
+void Renderer::GetGLPosition(float x, float y, float *newX, float *newY)
+{
+	*newX = x * 2.f / m_WindowSizeX;
+	*newY = y * 2.f / m_WindowSizeY;
+}
+
+void Renderer::CreateParticleVBO(int numParticleCount)
+{
+	int vertexCount = 6;
+	int particleCount = numParticleCount;
+	int floatCount = 3;
+	int totalFloatCount = particleCount * vertexCount * floatCount;
+
+	int totalFloatCountSingle = particleCount * vertexCount * 1;
+
+	int totalFloatCountFour = particleCount * vertexCount * 4;
+
+	m_ParticleVertexCount = particleCount * vertexCount;
+
+	float* vertices = NULL;
+	vertices = new float[totalFloatCount];
+
+	float particleSize = 0.01;
+
+	int index = 0;
+
+	for (int i = 0; i < numParticleCount; ++i)
+	{
+		float particleCenterX = 0.0f;//2.0f * (((float)rand() / (float)RAND_MAX) - 0.5f);
+		float particleCenterY = 0.0f;//2.0f * (((float)rand() / (float)RAND_MAX) - 0.5f);
+
+		vertices[index] = particleCenterX - particleSize; index++;
+		vertices[index] = particleCenterY + particleSize; index++;
+		vertices[index] = 0.f; index++;
+		vertices[index] = particleCenterX - particleSize; index++;
+		vertices[index] = particleCenterY - particleSize; index++;
+		vertices[index] = 0.f; index++;
+		vertices[index] = particleCenterX + particleSize; index++;
+		vertices[index] = particleCenterY + particleSize; index++;
+		vertices[index] = 0.f; index++;
+
+		vertices[index] = particleCenterX + particleSize; index++;
+		vertices[index] = particleCenterY + particleSize; index++;
+		vertices[index] = 0.f; index++;
+		vertices[index] = particleCenterX - particleSize; index++;
+		vertices[index] = particleCenterY - particleSize; index++;
+		vertices[index] = 0.f; index++;
+		vertices[index] = particleCenterX + particleSize; index++;
+		vertices[index] = particleCenterY - particleSize; index++;
+		vertices[index] = 0.f; index++;
+	}
+
+	glGenBuffers(1, &m_ParticleVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*totalFloatCount, vertices, GL_STATIC_DRAW);
+	delete[] vertices;
+
+	float* verticesVel = NULL;
+	verticesVel = new float[totalFloatCount];
+	index = 0;
+	for (int i = 0; i < numParticleCount; ++i)
+	{
+		float velX = 2.0f * (((float)rand() / (float)RAND_MAX) - 0.5f);
+		float velY = 2.0f * (((float)rand() / (float)RAND_MAX));//2.0f * (((float)rand() / (float)RAND_MAX) - 0.5f);
+
+		verticesVel[index] = velX; index++;
+		verticesVel[index] = velY; index++;
+		verticesVel[index] = 0.f; index++;
+		verticesVel[index] = velX; index++;
+		verticesVel[index] = velY; index++;
+		verticesVel[index] = 0.f; index++;
+		verticesVel[index] = velX; index++;
+		verticesVel[index] = velY; index++;
+		verticesVel[index] = 0.f; index++;
+
+		verticesVel[index] = velX; index++;
+		verticesVel[index] = velY; index++;
+		verticesVel[index] = 0.f; index++;
+		verticesVel[index] = velX; index++;
+		verticesVel[index] = velY; index++;
+		verticesVel[index] = 0.f; index++;
+		verticesVel[index] = velX; index++;
+		verticesVel[index] = velY; index++;
+		verticesVel[index] = 0.f; index++;
+	}
+
+	glGenBuffers(1, &m_ParticleVelVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleVelVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * totalFloatCount, verticesVel, GL_STATIC_DRAW);
+	delete[] verticesVel;
+
+	//emitTime
+	float* verticesEmitTime = NULL;
+	verticesEmitTime = new float[totalFloatCountSingle];
+	index = 0;
+	for (int i = 0; i < numParticleCount; ++i)
+	{
+		float emitTime = 10.0f * (((float)rand() / (float)RAND_MAX));
+
+		verticesEmitTime[index] = emitTime; index++;
+		verticesEmitTime[index] = emitTime; index++;
+		verticesEmitTime[index] = emitTime; index++;
+		verticesEmitTime[index] = emitTime; index++;
+		verticesEmitTime[index] = emitTime; index++;
+		verticesEmitTime[index] = emitTime; index++;
+	}
+
+	glGenBuffers(1, &m_ParticleEmitTimeVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleEmitTimeVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * totalFloatCountSingle, verticesEmitTime, GL_STATIC_DRAW);
+	delete[] verticesEmitTime;
+
+	//LifeTime
+	float* verticesLifeTime = NULL;
+	verticesLifeTime = new float[totalFloatCountSingle];
+	index = 0;
+	for (int i = 0; i < numParticleCount; ++i)
+	{
+		float lifetime =  ((float)rand() / (float)RAND_MAX) *1.f;
+
+		verticesLifeTime[index] = lifetime; index++;
+		verticesLifeTime[index] = lifetime; index++;
+		verticesLifeTime[index] = lifetime; index++;
+		verticesLifeTime[index] = lifetime; index++;
+		verticesLifeTime[index] = lifetime; index++;
+		verticesLifeTime[index] = lifetime; index++;
+	}
+
+	glGenBuffers(1, &m_ParticleLifeTimeVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleLifeTimeVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * totalFloatCountSingle, verticesLifeTime, GL_STATIC_DRAW);
+	delete[] verticesLifeTime;
+;
+		//Period
+	float* verticesPeriodTime = NULL;
+	verticesPeriodTime = new float[totalFloatCountSingle];
+	index = 0;
+	for (int i = 0; i < numParticleCount; ++i)
+	{
+		float period = 1.0f * (((float)rand() / (float)RAND_MAX));
+
+		verticesPeriodTime[index] = period; index++;
+		verticesPeriodTime[index] = period; index++;
+		verticesPeriodTime[index] = period; index++;
+		verticesPeriodTime[index] = period; index++;
+		verticesPeriodTime[index] = period; index++;
+		verticesPeriodTime[index] = period; index++;
+	}
+
+	glGenBuffers(1, &m_ParticlePeriodVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticlePeriodVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * totalFloatCountSingle, verticesPeriodTime, GL_STATIC_DRAW);
+	delete[] verticesPeriodTime;
+
+	//Period
+	float* verticesAmpTime = NULL;
+	verticesAmpTime = new float[totalFloatCountSingle];
+	index = 0;
+	for (int i = 0; i < numParticleCount; ++i)
+	{
+		float amp = 1.f * (2.f * (((float)rand() / (float)RAND_MAX)) - 1.f);
+
+		verticesAmpTime[index] = amp; index++;
+		verticesAmpTime[index] = amp; index++;
+		verticesAmpTime[index] = amp; index++;
+		verticesAmpTime[index] = amp; index++;
+		verticesAmpTime[index] = amp; index++;
+		verticesAmpTime[index] = amp; index++;
+	}
+
+	glGenBuffers(1, &m_ParticleAmpVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleAmpVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * totalFloatCountSingle, verticesAmpTime, GL_STATIC_DRAW);
+	delete[] verticesAmpTime;
+
+	//Value
+	float* verticesValueTime = NULL;
+	verticesValueTime = new float[totalFloatCountSingle];
+	index = 0;
+	for (int i = 0; i < numParticleCount; ++i)
+	{
+		float value = 1.f * ((float)rand() / (float)RAND_MAX);
+		verticesValueTime[index] = value; index++;
+		verticesValueTime[index] = value; index++;
+		verticesValueTime[index] = value; index++;
+		verticesValueTime[index] = value; index++;
+		verticesValueTime[index] = value; index++;
+		verticesValueTime[index] = value; index++;
+	}
+
+	glGenBuffers(1, &m_ParticleValueVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleValueVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * totalFloatCountSingle, verticesValueTime, GL_STATIC_DRAW);
+	delete[] verticesValueTime;
+
+	//Color
+	float* verticesColor = NULL;
+	verticesColor = new float[totalFloatCountFour];
+
+	index = 0;
+	for (int i = 0; i < numParticleCount; i++)
+	{
+		float r = 1.f * ((float)rand() / (float)RAND_MAX);
+		float g = 1.f * ((float)rand() / (float)RAND_MAX);
+		float b = 1.f * ((float)rand() / (float)RAND_MAX);
+		float a = 1.f; //1.f * ((float)rand() / (float)RAND_MAX);
+		verticesColor[index] = r; index++;
+		verticesColor[index] = g; index++;
+		verticesColor[index] = b; index++;
+		verticesColor[index] = a; index++; // v1
+
+		verticesColor[index] = r; index++;
+		verticesColor[index] = g; index++;
+		verticesColor[index] = b; index++;
+		verticesColor[index] = a; index++; // v2
+
+		verticesColor[index] = r; index++;
+		verticesColor[index] = g; index++;
+		verticesColor[index] = b; index++;
+		verticesColor[index] = a; index++; // v3
+
+		verticesColor[index] = r; index++;
+		verticesColor[index] = g; index++;
+		verticesColor[index] = b; index++;
+		verticesColor[index] = a; index++; // v4
+
+		verticesColor[index] = r; index++;
+		verticesColor[index] = g; index++;
+		verticesColor[index] = b; index++;
+		verticesColor[index] = a; index++; // v5
+
+		verticesColor[index] = r; index++;
+		verticesColor[index] = g; index++;
+		verticesColor[index] = b; index++;
+		verticesColor[index] = a; index++; // v6
+	}
+
+	glGenBuffers(1, &m_ParticleColorVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleColorVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * totalFloatCountFour,
+		verticesColor, GL_STATIC_DRAW);
+	delete[] verticesColor;
+
+	//Position, Color vbo
+	int totalFloatCountPosColUV = numParticleCount * 6 * (3 + 4 + 2);
+	float* verticesPosColUV = NULL;
+	verticesPosColUV = new float[totalFloatCountPosColUV];
+
+	particleSize = 0.1;
+
+	index = 0;
+
+	for (int i = 0; i < numParticleCount; ++i)
+	{
+		float particleCenterX = 0.0f;//2.0f * (((float)rand() / (float)RAND_MAX) - 0.5f);
+		float particleCenterY = 0.0f;//2.0f * (((float)rand() / (float)RAND_MAX) - 0.5f);
+		float r = 1.f * ((float)rand() / (float)RAND_MAX);
+		float g = 1.f * ((float)rand() / (float)RAND_MAX);
+		float b = 1.f * ((float)rand() / (float)RAND_MAX);
+		float a = 1.f; //1.f * ((float)rand() / (float)RAND_MAX);
+
+		verticesPosColUV[index] = particleCenterX - particleSize; index++;
+		verticesPosColUV[index] = particleCenterY + particleSize; index++;
+		verticesPosColUV[index] = 0.f; index++;
+		verticesPosColUV[index] = r; index++;
+		verticesPosColUV[index] = g; index++;
+		verticesPosColUV[index] = b; index++;
+		verticesPosColUV[index] = a; index++;
+
+		verticesPosColUV[index] = 0; index++;
+		verticesPosColUV[index] = 0; index++; // v1
+
+		verticesPosColUV[index] = particleCenterX - particleSize; index++;
+		verticesPosColUV[index] = particleCenterY - particleSize; index++;
+		verticesPosColUV[index] = 0.f; index++;
+		verticesPosColUV[index] = r; index++;
+		verticesPosColUV[index] = g; index++;
+		verticesPosColUV[index] = b; index++;
+		verticesPosColUV[index] = a; index++;
+
+		verticesPosColUV[index] = 0; index++;
+		verticesPosColUV[index] = 1; index++; // v2
+
+		verticesPosColUV[index] = particleCenterX + particleSize; index++;
+		verticesPosColUV[index] = particleCenterY + particleSize; index++;
+		verticesPosColUV[index] = 0.f; index++;
+		verticesPosColUV[index] = r; index++;
+		verticesPosColUV[index] = g; index++;
+		verticesPosColUV[index] = b; index++;
+		verticesPosColUV[index] = a; index++;
+
+		verticesPosColUV[index] = 1; index++;
+		verticesPosColUV[index] = 0; index++; // v3
+
+		verticesPosColUV[index] = particleCenterX + particleSize; index++;
+		verticesPosColUV[index] = particleCenterY + particleSize; index++;
+		verticesPosColUV[index] = 0.f; index++;
+		verticesPosColUV[index] = r; index++;
+		verticesPosColUV[index] = g; index++;
+		verticesPosColUV[index] = b; index++;
+		verticesPosColUV[index] = a; index++;
+
+		verticesPosColUV[index] = 1; index++;
+		verticesPosColUV[index] = 0; index++; // v4
+
+		verticesPosColUV[index] = particleCenterX - particleSize; index++;
+		verticesPosColUV[index] = particleCenterY - particleSize; index++;
+		verticesPosColUV[index] = 0.f; index++;
+		verticesPosColUV[index] = r; index++;
+		verticesPosColUV[index] = g; index++;
+		verticesPosColUV[index] = b; index++;
+		verticesPosColUV[index] = a; index++;
+
+		verticesPosColUV[index] = 0; index++;
+		verticesPosColUV[index] = 1; index++; // v5
+
+		verticesPosColUV[index] = particleCenterX + particleSize; index++;
+		verticesPosColUV[index] = particleCenterY - particleSize; index++;
+		verticesPosColUV[index] = 0.f; index++;
+		verticesPosColUV[index] = r; index++;
+		verticesPosColUV[index] = g; index++;
+		verticesPosColUV[index] = b; index++;
+		verticesPosColUV[index] = a; index++;
+
+		verticesPosColUV[index] = 1; index++;
+		verticesPosColUV[index] = 1; index++; // v6
+	}
+
+	glGenBuffers(1, &m_ParticlePosColUVVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticlePosColUVVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * totalFloatCountPosColUV, verticesPosColUV, GL_STATIC_DRAW);
+	delete[] verticesPosColUV;
+
+
+}
+
+void Renderer::Class0310()
+{
+	float vertices[] = {0,0,0, 1,0,0, 1,1,0};
+
+	glGenBuffers(1, &m_testVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_testVBO);
+	glBufferData(GL_ARRAY_BUFFER,sizeof(vertices),vertices,GL_STATIC_DRAW);//데이터를 올림 STATIC_DRAW를 쓰면 이 정보는 앞으로 변하지 않는다 라는 뜻을 가진다. STATIC이 있으면 DYNAMIC도 있다. STATIC의 경우는 앞으로 cpu가 데이터를 가지고 있을 필요가 없으므로 cpu메모리를 사용하지 않는다.
+	//하지만 DYNAMIC의 경우에는 올리는 데이터 만큼의 데이터 공간을 cpu메모리에 만든다. 둘의 성능 차이는 별로 없으나 DYNAMIC은 메모리가 조금 더 소비된다.
+
+	float vertices1[] = { -1,-1,0 ,0,-1,0, 0,0,0 };
+
+	glGenBuffers(1, &m_testVBO1);
+	glBindBuffer(GL_ARRAY_BUFFER, m_testVBO1);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices1), vertices1, GL_STATIC_DRAW);
+
+
+	float colors[] = { 1,0,0,1, 0,1,0,1, 0,0,1,1,1,0,0,1, 0,0,1,1, 0,1,0,1 };
+
+	glGenBuffers(1, &m_testVBOColor);
+	glBindBuffer(GL_ARRAY_BUFFER, m_testVBOColor);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
+	//int size = 40000000000000;
+	//float* testTemp = new float[size];
+	//memset(testTemp, 1, sizeof(float) * size);
+	
+	//GLuint testVBO1 = 0;
+	//glGenBuffers(1, &testVBO1);
+	//glBindBuffer(GL_ARRAY_BUFFER, testVBO1); //bind는 시간이 많이 걸리지 않는다.
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(float)*size, testTemp, GL_STATIC_DRAW);
+}
 
 void Renderer::Class0310_Rendering()
-{	//Program select
+{
 	glUseProgram(m_SolidRectShader);
 
 	glUniform4f(glGetUniformLocation(m_SolidRectShader, "u_Trans"), 0, 0, 0, 1);
 	glUniform4f(glGetUniformLocation(m_SolidRectShader, "u_Color"), 1, 1, 1, 1);
 
-	int attribLocation_Position = -1;
-	attribLocation_Position = glGetAttribLocation(m_SolidRectShader,
-		"a_Position");
-	glEnableVertexAttribArray(attribLocation_Position);
+	int attribLocation = glGetAttribLocation(m_SolidRectShader, "a_Position");
+
+	glEnableVertexAttribArray(attribLocation);
 	glBindBuffer(GL_ARRAY_BUFFER, m_testVBO);
-	glVertexAttribPointer(attribLocation_Position, 3, GL_FLOAT, 
-		GL_FALSE, 0, 0);
+	glVertexAttribPointer(attribLocation, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 
-	int attribLocation_Position1 = glGetAttribLocation(m_SolidRectShader, 
-		"a_Position1");
-	glEnableVertexAttribArray(attribLocation_Position1);
+	int attribLocation1 = glGetAttribLocation(m_SolidRectShader, "a_Position1");
+
+	glEnableVertexAttribArray(attribLocation1);
 	glBindBuffer(GL_ARRAY_BUFFER, m_testVBO1);
-	glVertexAttribPointer(attribLocation_Position1, 3, GL_FLOAT, GL_FALSE,
-		sizeof(float) * 3, 0);
+	glVertexAttribPointer(attribLocation1, 3, GL_FLOAT, GL_FALSE, sizeof(float)*3, 0);
 
+	if (point) frame--;
+	else frame++;
 	int uniformScale = glGetUniformLocation(m_SolidRectShader, "u_Scale");
-	glUniform1f(uniformScale, g_time);
-	g_time += 0.0016;
-	if (g_time > 1.f)
-		g_time = 0.f;
+	glUniform1f(uniformScale, frame/60.0);
+
+	if (frame == 60) point = !point;
+	else if (frame == 0) point = !point;
+
 
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
@@ -261,115 +651,106 @@ void Renderer::Class0310_Rendering()
 void Renderer::DrawParticle()
 {
 	GLuint program = m_ParticleShader;
-	glUseProgram(program);
+	glUseProgram(program);//shader ID를 넘긴다.
+	//int posLoc = glGetAttribLocation(program, "a_Position");
+	//glEnableVertexAttribArray(posLoc);
+	//glBindBuffer(GL_ARRAY_BUFFER, m_ParticleVBO);
+	//glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	//int colorLoc = glGetAttribLocation(program, "a_Color");
+	//glEnableVertexAttribArray(colorLoc);
+	//glBindBuffer(GL_ARRAY_BUFFER, m_ParticleColorVBO);
+	//glVertexAttribPointer(colorLoc, 4, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-
-	/*
-	int posLoc = glGetAttribLocation(program, "a_Position");
-	glEnableVertexAttribArray(posLoc);
-	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleVBO);
-	glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE,
-							0, 0);
-
-	int colorLoc = glGetAttribLocation(program, "a_Color");
-	glEnableVertexAttribArray(colorLoc);
-	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleColorVBO);
-	glVertexAttribPointer(colorLoc, 4, GL_FLOAT, GL_FALSE,
-		0, 0);
-	*/
 	int posLoc = glGetAttribLocation(program, "a_Position");
 	glEnableVertexAttribArray(posLoc);
 	int colorLoc = glGetAttribLocation(program, "a_Color");
 	glEnableVertexAttribArray(colorLoc);
-	int texLoc = glGetAttribLocation(program, "a_Texcoord");
-	glEnableVertexAttribArray(texLoc);
-	//glBindBuffer(GL_ARRAY_BUFFER, m_ParticlePosColVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_ParticlePosColTexcoordVBO);
-	glVertexAttribPointer(posLoc, 3, GL_FLOAT,
-		GL_FALSE,
-		sizeof(float)*9, 0);
-	glVertexAttribPointer(colorLoc, 4, GL_FLOAT, 
-		GL_FALSE,
-		sizeof(float) * 9, (GLvoid*)(sizeof(float)*3));
-	glVertexAttribPointer(texLoc, 2, GL_FLOAT,
-		GL_FALSE,
-		sizeof(float) * 9, (GLvoid*)(sizeof(float) * 7));
+	int uvLoc = glGetAttribLocation(program, "a_UV");
+	glEnableVertexAttribArray(uvLoc);
+	glBindBuffer(GL_ARRAY_BUFFER, m_ParticlePosColUVVBO);
 
-	int velLoc = glGetAttribLocation(program, "a_Vel");
-	glEnableVertexAttribArray(velLoc);
+	glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, sizeof(float)*9, 0);
+	glVertexAttribPointer(colorLoc, 4, GL_FLOAT, GL_FALSE, sizeof(float)*9, (GLvoid*)(sizeof(float)*3));
+	glVertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, sizeof(float)*9, (GLvoid*)(sizeof(float)*7));
+
+	int posLoc3 = glGetAttribLocation(program, "a_Vel");
+	glEnableVertexAttribArray(posLoc3);
 	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleVelVBO);
-	glVertexAttribPointer(velLoc, 3, GL_FLOAT, GL_FALSE,
-		0, 0);
+	glVertexAttribPointer(posLoc3, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	int emitTimeLoc = glGetAttribLocation(program, "a_EmitTime");
-	glEnableVertexAttribArray(emitTimeLoc);
+	int posLoc4 = glGetAttribLocation(program, "a_emit_time");
+	glEnableVertexAttribArray(posLoc4);
 	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleEmitTimeVBO);
-	glVertexAttribPointer(emitTimeLoc, 1, GL_FLOAT, GL_FALSE,
-		0, 0);
+	glVertexAttribPointer(posLoc4, 1, GL_FLOAT, GL_FALSE, 0, 0);
 
-	int lifeTimeLoc = glGetAttribLocation(program, "a_LifeTime");
-	glEnableVertexAttribArray(lifeTimeLoc);
+	int posLoc5 = glGetAttribLocation(program, "a_life_time");
+	glEnableVertexAttribArray(posLoc5);
 	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleLifeTimeVBO);
-	glVertexAttribPointer(lifeTimeLoc, 1, GL_FLOAT, GL_FALSE,
-		0, 0);
+	glVertexAttribPointer(posLoc5, 1, GL_FLOAT, GL_FALSE, 0, 0);
 
-	int periodLoc = glGetAttribLocation(program, "a_Period");
-	glEnableVertexAttribArray(periodLoc);
+	int posLoc6 = glGetAttribLocation(program, "a_Period");
+	glEnableVertexAttribArray(posLoc6);
 	glBindBuffer(GL_ARRAY_BUFFER, m_ParticlePeriodVBO);
-	glVertexAttribPointer(periodLoc, 1, GL_FLOAT, GL_FALSE,
-		0, 0);
+	glVertexAttribPointer(posLoc6, 1, GL_FLOAT, GL_FALSE, 0, 0);
 
-	int ampLoc = glGetAttribLocation(program, "a_Amp");
-	glEnableVertexAttribArray(ampLoc);
+	int posLoc7 = glGetAttribLocation(program, "a_Amp");
+	glEnableVertexAttribArray(posLoc7);
 	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleAmpVBO);
-	glVertexAttribPointer(ampLoc, 1, GL_FLOAT, GL_FALSE,
-		0, 0);
+	glVertexAttribPointer(posLoc7, 1, GL_FLOAT, GL_FALSE, 0, 0);
 
-	int valueLoc = glGetAttribLocation(program, "a_Value");
-	glEnableVertexAttribArray(valueLoc);
+	int posLoc8 = glGetAttribLocation(program, "a_Value");
+	glEnableVertexAttribArray(posLoc8);
 	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleValueVBO);
-	glVertexAttribPointer(valueLoc, 1, GL_FLOAT, GL_FALSE,
-		0, 0);
+	glVertexAttribPointer(posLoc8, 1, GL_FLOAT, GL_FALSE, 0, 0);
 
+	//int posLoc2 = glGetAttribLocation(program, "a_Color");
+	//glEnableVertexAttribArray(posLoc2);
+	//glBindBuffer(GL_ARRAY_BUFFER, m_testVBOColor);
+	//glVertexAttribPointer(posLoc2, 4, GL_FLOAT, GL_FALSE, sizeof(float) * 4, 0);
 
 	int timeLoc = glGetUniformLocation(program, "u_Time");
 	glUniform1f(timeLoc, g_time);
-	int accelLoc = glGetUniformLocation(program, "u_Accel");
-	glUniform3f(accelLoc, 0.f, -2.8f, 0.f);
 
-	g_time += 0.01;
+	int accelLoc = glGetUniformLocation(program, "u_Accel");
+	glUniform3f(accelLoc, 0.f,-2.8f,0.f);
+
+	g_time += 0.001;
 
 	glDrawArrays(GL_TRIANGLES, 0, m_ParticleVertexCount);
+
+	glDisable(GL_BLEND);
 }
 
-void Renderer::DrawFragmentSandbox()
+void Renderer::DrawFragmentSandBox()
 {
 	GLuint shader = m_FragmentSandboxShader;
 	glUseProgram(shader);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+
 	int posLoc = glGetAttribLocation(shader, "a_Position");
-	int texLoc = glGetAttribLocation(shader, "a_Texcoord");
+	int texLoc = glGetAttribLocation(shader, "a_UV");
 	glEnableVertexAttribArray(posLoc);
 	glEnableVertexAttribArray(texLoc);
-
 	glBindBuffer(GL_ARRAY_BUFFER, m_FragmentSandboxVBO);
-	glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 5.f, 0);
-	glVertexAttribPointer(texLoc, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 5.f, (GLvoid*)(sizeof(float) * 3));
 
-	int pointULoc = glGetUniformLocation(shader, "u_Point");
-	glUniform2f(pointULoc, 0.3f, 0.3f);
+	glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 5, 0);
+	glVertexAttribPointer(texLoc, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 5, (GLvoid*)(sizeof(float) * 3));
+	
+	int pointLoc = glGetUniformLocation(shader, "u_point");
+	glUniform2f(pointLoc, 0.5,0.5);
 
-	int pointsULoc = glGetUniformLocation(shader, "u_Points");
-	float points[] = { 0.1, 0.1, 0.5, 0.5, 0.8, 0.8 };
-	glUniform2fv(pointsULoc, 3, points);	// unifrom array 쉐이더에 넘겨주기
+	float points[] = { 0.1,0.1,0.5,0.5,0.8,0.8 };
+	int pointsLoc = glGetUniformLocation(shader, "u_points");
+	glUniform2fv(pointsLoc, 3, points);
 
 	int timeLoc = glGetUniformLocation(shader, "u_Time");
 	glUniform1f(timeLoc, g_time);
+	g_time += 0.001;
 
-	g_time += 0.008;
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
@@ -385,14 +766,18 @@ void Renderer::DrawAlphaClear()
 	int posLoc = glGetAttribLocation(shader, "a_Position");
 	glEnableVertexAttribArray(posLoc);
 	glBindBuffer(GL_ARRAY_BUFFER, m_AlphaClearVBO);
-	glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 0 , 0);
+
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void Renderer::DrawVertexSandbox()
+void Renderer::DrawVertexSandBox()
 {
 	GLuint shader = m_VertexSandboxShader;
 	glUseProgram(shader);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	int posLoc = glGetAttribLocation(shader, "a_Position");
 	glEnableVertexAttribArray(posLoc);
@@ -400,462 +785,86 @@ void Renderer::DrawVertexSandbox()
 	glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	int timeLoc = glGetUniformLocation(shader, "u_Time");
-	glUniform1f(timeLoc, g_time);
-
+	//glUniform1f(timeLoc, g_time);
 	g_time += 0.016;
 
-	glDrawArrays(GL_LINE_STRIP, 0, m_HorizontalLineVertexCount);
-	//	GL_LINE_STRIP : 연속된 입력을 다 연결해주는거
+	for (int i = 0; i <5; ++i)
+	{
+		glUniform1f(timeLoc, g_time + (float)i * 0.2);
+		glDrawArrays(GL_LINE_STRIP, 0, m_HorizontalLineVertexCount);
+	}
+
+	glDisable(GL_BLEND);
 }
 
-void Renderer::GetGLPosition(float x, float y, float *newX, float *newY)
+void Renderer::DrawTextureSandBox()
 {
-	*newX = x * 2.f / m_WindowSizeX;
-	*newY = y * 2.f / m_WindowSizeY;
+	GLuint shader =  m_TextureSandboxShader;
+	glUseProgram(shader);
+
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	int posLoc = glGetAttribLocation(shader, "a_Position");
+	glEnableVertexAttribArray(posLoc);
+	int textLoc = glGetAttribLocation(shader, "a_TexPos");
+	glEnableVertexAttribArray(textLoc);
+	glBindBuffer(GL_ARRAY_BUFFER, m_TextureSandboxVBO);
+	glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, sizeof(float)*5, 0);
+	glVertexAttribPointer(textLoc, 2, GL_FLOAT, GL_FALSE, sizeof(float)*5, (GLvoid*)(sizeof(float)*3));
+
+	GLuint samplerULoc = glGetUniformLocation(shader, "u_TexSampler");
+	glUniform1i(samplerULoc, 0);
+	glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, m_CheckerBoardTexture);
+	glBindTexture(GL_TEXTURE_2D, m_RGBTexture);
+
+	GLuint repeatULoc = glGetUniformLocation(shader, "u_XYReapeat");
+	glUniform2f(repeatULoc, 4.f,4.f);
+
+	g_time += 0.08;
+
+	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void Renderer::Class0310()
+void Renderer::CreateTextures()
 {
-	float vertices[] = { 0, 0, 0, 1, 0, 0, 1, 1, 0 };
-
-	glGenBuffers(1, &m_testVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_testVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, 
-		GL_STATIC_DRAW);
-
-	float vertices1[] = { -1, -1, 0, 
-						0, -1, 0, 
-						0, 0, 0 };
-
-	glGenBuffers(1, &m_testVBO1);
-	glBindBuffer(GL_ARRAY_BUFFER, m_testVBO1);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices1), vertices1,
-		GL_STATIC_DRAW);
-
-	float color[] = {  1, 0, 0, 1,
-					   0, 1, 0, 1,
-					   0, 0, 1, 1 };
-
-	glGenBuffers(1, &m_ColorVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_ColorVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(color), color,
-		GL_STATIC_DRAW);
-
-	/*int size = 40000000000000;
-	float* testTemp = new float[size];
-	memset(testTemp, 1, sizeof(float)*size);
-
-	GLuint testVBO1 = 0;
-	glGenBuffers(1, &testVBO1);
-	glBindBuffer(GL_ARRAY_BUFFER, testVBO1);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*size,
-		testTemp,
-		GL_STATIC_DRAW);*/
+	GLulong checkerboard[] =
+	{
+	0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
+	0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
+	0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
+	0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
+	0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
+	0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF,
+	0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
+	0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF
+	};
+	glGenTextures(1, &m_CheckerBoardTexture);
+	glBindTexture(GL_TEXTURE_2D, m_CheckerBoardTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, checkerboard);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 }
 
-void Renderer::CreateParticleVBO(int numParticleCount)
+GLuint Renderer::CreatePngTexture(char* filePath, GLuint samplingMethod)
 {
-	int vertexCount = 6;
-	int particleCount = numParticleCount;
-	int floatCount = 3;
-	int totalFloatCount = particleCount
-		* vertexCount
-		* floatCount;
-	int totalFloatCountSingle = particleCount
-		* vertexCount
-		* 1;
-	int totalFloatCountFour = particleCount
-		* vertexCount
-		* 4;
-
-	m_ParticleVertexCount = particleCount * vertexCount;
-
-	float* vertices = NULL;
-	vertices = new float[totalFloatCount];
-
-	float particleSize = 0.01f;
-
-	int index = 0;
-	for (int i = 0; i < numParticleCount; i++)
+	std::vector<unsigned char>image;
+	unsigned width, height;
+	unsigned error = lodepng::decode(image, width, height, filePath);
+	if (error != 0)
 	{
-		float particelCenterX = 0.f; // 2.f*(((float)rand() / (float)RAND_MAX) - 0.5f);
-		float particelCenterY = 0.f; // 2.f*(((float)rand() / (float)RAND_MAX) - 0.5f);
-		vertices[index] = particelCenterX - particleSize; index++;
-		vertices[index] = particelCenterY + particleSize; index++;
-		vertices[index] = 0.f; index++;
-		vertices[index] = particelCenterX - particleSize; index++;
-		vertices[index] = particelCenterY - particleSize; index++;
-		vertices[index] = 0.f; index++;
-		vertices[index] = particelCenterX + particleSize; index++;
-		vertices[index] = particelCenterY + particleSize; index++;
-		vertices[index] = 0.f; index++;
-
-		vertices[index] = particelCenterX + particleSize; index++;
-		vertices[index] = particelCenterY + particleSize; index++;
-		vertices[index] = 0.f; index++;
-		vertices[index] = particelCenterX - particleSize; index++;
-		vertices[index] = particelCenterY - particleSize; index++;
-		vertices[index] = 0.f; index++;
-		vertices[index] = particelCenterX + particleSize; index++;
-		vertices[index] = particelCenterY - particleSize; index++;
-		vertices[index] = 0.f; index++;
+		std::cout << "PNG image loading failed" << filePath<<std::endl;
+		assert(0);
 	}
-
-	glGenBuffers(1, &m_ParticleVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*totalFloatCount,
-		vertices, GL_STATIC_DRAW);
-	delete[] vertices;
-
-	float* verticesVel = NULL;
-	verticesVel = new float[totalFloatCount];
-
-	index = 0;
-	for (int i = 0; i < numParticleCount; i++)
-	{
-		float velX = 1.f*(((float)rand() / (float)RAND_MAX) - 0.5f);
-		float velY = 2.f*(((float)rand() / (float)RAND_MAX));
-		verticesVel[index] = velX; index++;
-		verticesVel[index] = velY; index++;
-		verticesVel[index] = 0.f; index++;
-		verticesVel[index] = velX; index++;
-		verticesVel[index] = velY; index++;
-		verticesVel[index] = 0.f; index++;;
-		verticesVel[index] = velX; index++;
-		verticesVel[index] = velY; index++;
-		verticesVel[index] = 0.f; index++;
-		
-		verticesVel[index] = velX; index++;
-		verticesVel[index] = velY; index++;
-		verticesVel[index] = 0.f; index++;
-		verticesVel[index] = velX; index++;
-		verticesVel[index] = velY; index++;
-		verticesVel[index] = 0.f; index++;;
-		verticesVel[index] = velX; index++;
-		verticesVel[index] = velY; index++;
-		verticesVel[index] = 0.f; index++;
-	}
-
-	glGenBuffers(1, &m_ParticleVelVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleVelVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*totalFloatCount,
-		verticesVel, GL_STATIC_DRAW);
-	delete[] verticesVel;
-	
-	//EmitTime
-	float* verticesEmitTime = NULL;
-	verticesEmitTime = new float[totalFloatCountSingle];
-
-	index = 0;
-	for (int i = 0; i < numParticleCount; i++)
-	{
-		float emitTime = 10.f*(((float)rand() / (float)RAND_MAX));
-		verticesEmitTime[index] = emitTime; index++;
-		verticesEmitTime[index] = emitTime; index++;
-		verticesEmitTime[index] = emitTime; index++;
-		verticesEmitTime[index] = emitTime; index++;
-		verticesEmitTime[index] = emitTime; index++;
-		verticesEmitTime[index] = emitTime; index++;;
-	}
-
-	glGenBuffers(1, &m_ParticleEmitTimeVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleEmitTimeVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*totalFloatCountSingle,
-		verticesEmitTime, GL_STATIC_DRAW);
-	delete[] verticesEmitTime;
-
-	//LifeTime
-	float* verticesLifeTime = NULL;
-	verticesLifeTime = new float[totalFloatCountSingle];
-
-	index = 0;
-	for (int i = 0; i < numParticleCount; i++)
-	{
-		float lifeTime = 1.f*(((float)rand() / (float)RAND_MAX));
-		verticesLifeTime[index] = lifeTime; index++;
-		verticesLifeTime[index] = lifeTime; index++;
-		verticesLifeTime[index] = lifeTime; index++;
-		verticesLifeTime[index] = lifeTime; index++;
-		verticesLifeTime[index] = lifeTime; index++;
-		verticesLifeTime[index] = lifeTime; index++;;
-	}
-
-	glGenBuffers(1, &m_ParticleLifeTimeVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleLifeTimeVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*totalFloatCountSingle,
-		verticesLifeTime, GL_STATIC_DRAW);
-	delete[] verticesLifeTime;
-
-	//period
-	float* verticesPeriodTime = NULL;
-	verticesPeriodTime = new float[totalFloatCountSingle];
-
-	index = 0;
-	for (int i = 0; i < numParticleCount; i++)
-	{
-		float period = 1.0*(((float)rand() / (float)RAND_MAX));
-		verticesPeriodTime[index] = period; index++;
-		verticesPeriodTime[index] = period; index++;
-		verticesPeriodTime[index] = period; index++;
-		verticesPeriodTime[index] = period; index++;
-		verticesPeriodTime[index] = period; index++;
-		verticesPeriodTime[index] = period; index++;;
-	}
-
-	glGenBuffers(1, &m_ParticlePeriodVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_ParticlePeriodVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*totalFloatCountSingle,
-		verticesPeriodTime, GL_STATIC_DRAW);
-	delete[] verticesPeriodTime;
-
-	//amp
-	float* verticesAmpTime = NULL;
-	verticesAmpTime = new float[totalFloatCountSingle];
-
-	index = 0;
-	for (int i = 0; i < numParticleCount; i++)
-	{
-		float amp = 1.0f*(2.f*(((float)rand() / (float)RAND_MAX))-1.f);
-		verticesAmpTime[index] = amp; index++;
-		verticesAmpTime[index] = amp; index++;
-		verticesAmpTime[index] = amp; index++;
-		verticesAmpTime[index] = amp; index++;
-		verticesAmpTime[index] = amp; index++;
-		verticesAmpTime[index] = amp; index++;;
-	}
-
-	glGenBuffers(1, &m_ParticleAmpVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleAmpVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*totalFloatCountSingle,
-		verticesAmpTime, GL_STATIC_DRAW);
-	delete[] verticesAmpTime;
-
-	//value
-	float* verticesValue = NULL;
-	verticesValue = new float[totalFloatCountSingle];
-
-	index = 0;
-	for (int i = 0; i < numParticleCount; i++)
-	{
-		float value = 1.f*((float)rand() / (float)RAND_MAX);
-		verticesValue[index] = value; index++;
-		verticesValue[index] = value; index++;
-		verticesValue[index] = value; index++;
-		verticesValue[index] = value; index++;
-		verticesValue[index] = value; index++;
-		verticesValue[index] = value; index++;;
-	}
-
-	glGenBuffers(1, &m_ParticleValueVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleValueVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*totalFloatCountSingle,
-		verticesValue, GL_STATIC_DRAW);
-	delete[] verticesValue;	
-
-	//color
-	float* verticesColor = NULL;
-	verticesColor = new float[totalFloatCountFour];
-
-	index = 0;
-	for (int i = 0; i < numParticleCount; i++)
-	{
-		float r = 1.f*((float)rand() / (float)RAND_MAX);
-		float g = 1.f*((float)rand() / (float)RAND_MAX);
-		float b = 1.f*((float)rand() / (float)RAND_MAX);
-		float a = 1.f*((float)rand() / (float)RAND_MAX);
-
-		verticesColor[index] = r; index++;
-		verticesColor[index] = g; index++;
-		verticesColor[index] = b; index++;
-		verticesColor[index] = a; index++;//v1
-
-		verticesColor[index] = r; index++;
-		verticesColor[index] = g; index++;
-		verticesColor[index] = b; index++;
-		verticesColor[index] = a; index++;//v2
-
-		verticesColor[index] = r; index++;
-		verticesColor[index] = g; index++;
-		verticesColor[index] = b; index++;
-		verticesColor[index] = a; index++;//v3
-
-		verticesColor[index] = r; index++;
-		verticesColor[index] = g; index++;
-		verticesColor[index] = b; index++;
-		verticesColor[index] = a; index++;//v4
-
-		verticesColor[index] = r; index++;
-		verticesColor[index] = g; index++;
-		verticesColor[index] = b; index++;
-		verticesColor[index] = a; index++;//v5
-
-		verticesColor[index] = r; index++;
-		verticesColor[index] = g; index++;
-		verticesColor[index] = b; index++;
-		verticesColor[index] = a; index++;//v6
-	}
-
-	glGenBuffers(1, &m_ParticleColorVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_ParticleColorVBO);
-	glBufferData(GL_ARRAY_BUFFER, 
-		sizeof(float)*totalFloatCountFour,
-		verticesColor, GL_STATIC_DRAW);
-	delete[] verticesColor;
-	   	  
-	//pos+color vbo
-	/*
-	int totalFloatCountPosCol = numParticleCount * 6 *
-		(3 + 4);
-	float* verticesPosColor = NULL;
-	verticesPosColor = new float[totalFloatCountPosCol];
-
-	index = 0;
-	for (int i = 0; i < numParticleCount; i++)
-	{
-		float particelCenterX = 0.f; // 2.f*(((float)rand() / (float)RAND_MAX) - 0.5f);
-		float particelCenterY = 0.f; // 2.f*(((float)rand() / (float)RAND_MAX) - 0.5f);
-		float r = 1.f*((float)rand() / (float)RAND_MAX);
-		float g = 1.f*((float)rand() / (float)RAND_MAX);
-		float b = 1.f*((float)rand() / (float)RAND_MAX);
-		float a = 1.f*((float)rand() / (float)RAND_MAX);
-
-		verticesPosColor[index] = particelCenterX - particleSize; index++;
-		verticesPosColor[index] = particelCenterY + particleSize; index++;
-		verticesPosColor[index] = 0.f; index++;
-		verticesPosColor[index] = r; index++;
-		verticesPosColor[index] = g; index++;
-		verticesPosColor[index] = b; index++;
-		verticesPosColor[index] = a; index++;//v1
-
-		verticesPosColor[index] = particelCenterX - particleSize; index++;
-		verticesPosColor[index] = particelCenterY - particleSize; index++;
-		verticesPosColor[index] = 0.f; index++;
-		verticesPosColor[index] = r; index++;
-		verticesPosColor[index] = g; index++;
-		verticesPosColor[index] = b; index++;
-		verticesPosColor[index] = a; index++;//v2
-
-		verticesPosColor[index] = particelCenterX + particleSize; index++;
-		verticesPosColor[index] = particelCenterY + particleSize; index++;
-		verticesPosColor[index] = 0.f; index++;
-		verticesPosColor[index] = r; index++;
-		verticesPosColor[index] = g; index++;
-		verticesPosColor[index] = b; index++;
-		verticesPosColor[index] = a; index++;//v3
-
-		verticesPosColor[index] = particelCenterX + particleSize; index++;
-		verticesPosColor[index] = particelCenterY + particleSize; index++;
-		verticesPosColor[index] = 0.f; index++;
-		verticesPosColor[index] = r; index++;
-		verticesPosColor[index] = g; index++;
-		verticesPosColor[index] = b; index++;
-		verticesPosColor[index] = a; index++;//v4
-
-		verticesPosColor[index] = particelCenterX - particleSize; index++;
-		verticesPosColor[index] = particelCenterY - particleSize; index++;
-		verticesPosColor[index] = 0.f; index++;
-		verticesPosColor[index] = r; index++;
-		verticesPosColor[index] = g; index++;
-		verticesPosColor[index] = b; index++;
-		verticesPosColor[index] = a; index++;//v5
-
-		verticesPosColor[index] = particelCenterX + particleSize; index++;
-		verticesPosColor[index] = particelCenterY - particleSize; index++;
-		verticesPosColor[index] = 0.f; index++;
-		verticesPosColor[index] = r; index++;
-		verticesPosColor[index] = g; index++;
-		verticesPosColor[index] = b; index++;
-		verticesPosColor[index] = a; index++;//v6
-	}
-
-	glGenBuffers(1, &m_ParticlePosColVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_ParticlePosColVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*totalFloatCountPosCol,
-		verticesPosColor, GL_STATIC_DRAW);
-	delete[] verticesPosColor;
-	 */
-
-	//pos+color+UV vbo
-	int totalFloatCountPosColTex = numParticleCount * 6 *
-		(3 + 4 + 2);
-	float* verticesPosColorTex = NULL;
-	verticesPosColorTex = new float[totalFloatCountPosColTex];
-
-	index = 0;
-	for (int i = 0; i < numParticleCount; i++)
-	{
-		float particelCenterX = 0.f; // 2.f*(((float)rand() / (float)RAND_MAX) - 0.5f);
-		float particelCenterY = 0.f; // 2.f*(((float)rand() / (float)RAND_MAX) - 0.5f);
-		float r = 1.f * ((float)rand() / (float)RAND_MAX);
-		float g = 1.f * ((float)rand() / (float)RAND_MAX);
-		float b = 1.f * ((float)rand() / (float)RAND_MAX);
-		float a = 1.f * ((float)rand() / (float)RAND_MAX);
-
-		verticesPosColorTex[index] = particelCenterX - particleSize; index++;
-		verticesPosColorTex[index] = particelCenterY + particleSize; index++;
-		verticesPosColorTex[index] = 0.f; index++;
-		verticesPosColorTex[index] = r; index++;
-		verticesPosColorTex[index] = g; index++;
-		verticesPosColorTex[index] = b; index++;
-		verticesPosColorTex[index] = a; index++;//v1
-		verticesPosColorTex[index] = 0.f; index++;
-		verticesPosColorTex[index] = 1.f; index++;//v1
-
-		verticesPosColorTex[index] = particelCenterX - particleSize; index++;
-		verticesPosColorTex[index] = particelCenterY - particleSize; index++;
-		verticesPosColorTex[index] = 0.f; index++;
-		verticesPosColorTex[index] = r; index++;
-		verticesPosColorTex[index] = g; index++;
-		verticesPosColorTex[index] = b; index++;
-		verticesPosColorTex[index] = a; index++;//v2
-		verticesPosColorTex[index] = 0.f; index++;
-		verticesPosColorTex[index] = 0.f; index++;//v1
-
-		verticesPosColorTex[index] = particelCenterX + particleSize; index++;
-		verticesPosColorTex[index] = particelCenterY + particleSize; index++;
-		verticesPosColorTex[index] = 0.f; index++;
-		verticesPosColorTex[index] = r; index++;
-		verticesPosColorTex[index] = g; index++;
-		verticesPosColorTex[index] = b; index++;
-		verticesPosColorTex[index] = a; index++;//v3
-		verticesPosColorTex[index] = 1.f; index++;
-		verticesPosColorTex[index] = 1.f; index++;//v1
-
-		verticesPosColorTex[index] = particelCenterX + particleSize; index++;
-		verticesPosColorTex[index] = particelCenterY + particleSize; index++;
-		verticesPosColorTex[index] = 0.f; index++;
-		verticesPosColorTex[index] = r; index++;
-		verticesPosColorTex[index] = g; index++;
-		verticesPosColorTex[index] = b; index++;
-		verticesPosColorTex[index] = a; index++;//v4
-		verticesPosColorTex[index] = 1.f; index++;
-		verticesPosColorTex[index] = 1.f; index++;//v1
-
-		verticesPosColorTex[index] = particelCenterX - particleSize; index++;
-		verticesPosColorTex[index] = particelCenterY - particleSize; index++;
-		verticesPosColorTex[index] = 0.f; index++;
-		verticesPosColorTex[index] = r; index++;
-		verticesPosColorTex[index] = g; index++;
-		verticesPosColorTex[index] = b; index++;
-		verticesPosColorTex[index] = a; index++;//v5
-		verticesPosColorTex[index] = 0.f; index++;
-		verticesPosColorTex[index] = 0.f; index++;//v1
-
-		verticesPosColorTex[index] = particelCenterX + particleSize; index++;
-		verticesPosColorTex[index] = particelCenterY - particleSize; index++;
-		verticesPosColorTex[index] = 0.f; index++;
-		verticesPosColorTex[index] = r; index++;
-		verticesPosColorTex[index] = g; index++;
-		verticesPosColorTex[index] = b; index++;
-		verticesPosColorTex[index] = a; index++;//v6
-		verticesPosColorTex[index] = 1.f; index++;
-		verticesPosColorTex[index] = 0.f; index++;//v1
-	}
-
-	glGenBuffers(1, &m_ParticlePosColTexcoordVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_ParticlePosColTexcoordVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * totalFloatCountPosColTex,
-		verticesPosColorTex, GL_STATIC_DRAW);
-	delete[] verticesPosColorTex;
+	GLuint temp;
+	glGenTextures(1, &temp);
+	glBindTexture(GL_TEXTURE_2D, temp);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, samplingMethod);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, samplingMethod);
+	return temp;
 }
