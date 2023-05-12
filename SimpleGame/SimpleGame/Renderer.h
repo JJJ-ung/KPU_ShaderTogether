@@ -81,6 +81,7 @@ private:
 	GLuint m_3Texture = 0;
 	GLuint m_4Texture = 0;
 	GLuint m_5Texture = 0;
+	GLuint m_MergedTexture = 0;
 
 	int frame = 0;
 	bool point = 0;

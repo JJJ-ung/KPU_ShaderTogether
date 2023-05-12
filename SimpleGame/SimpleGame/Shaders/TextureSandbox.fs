@@ -6,6 +6,8 @@ uniform sampler2D u_TexSampler;
 uniform sampler2D u_MultiTexSampler[2];
 
 uniform vec2 u_XYReapeat;
+uniform float u_Step;
+
 in vec2 v_TexPos;
 
 void P1()
@@ -71,10 +73,10 @@ void P7()
 
 void MultiTexture()
 {
-	float x = v_TexPos.x * 2.0;
-	float y = v_TexPos.y;
+	float x = v_TexPos.x; //* 2.0;
+	float y = u_Step / 6.0 + v_TexPos.y / 6.0;
 	vec2 newTexPos = vec2(x,y);
-	FragColor = texture(u_MultiTexSampler[int(floor(x))], fract(newTexPos));
+	//FragColor = texture(u_MultiTexSampler[int(floor(x))], fract(newTexPos));
 	//if(x > 1.0)
 	//{
 	//	FragColor = texture(u_MultiTexSampler[1], fract(newTexPos));
@@ -83,6 +85,7 @@ void MultiTexture()
 	//{
 	//	FragColor = texture(u_MultiTexSampler[0], fract(newTexPos));
 	//}
+	FragColor = texture(u_TexSampler, newTexPos);
 }
 
 void main()
