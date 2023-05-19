@@ -42,6 +42,9 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	m_3Texture = CreatePngTexture("./0512_3.png", GL_NEAREST);
 	m_4Texture = CreatePngTexture("./0512_4.png", GL_NEAREST);
 	m_5Texture = CreatePngTexture("./0512_5.png", GL_NEAREST);
+	m_MergedTexture = CreatePngTexture("./0512_merged.png", GL_NEAREST);
+
+	m_ParticleTexture = CreatePngTexture("./0517_Particle.png", GL_NEAREST);
 
 	if (m_SolidRectShader > 0 && m_VBORect > 0)
 	{
@@ -723,6 +726,11 @@ void Renderer::DrawParticle()
 	int accelLoc = glGetUniformLocation(program, "u_Accel");
 	glUniform3f(accelLoc, 0.f,-2.8f,0.f);
 
+	int texULoc = glGetUniformLocation(program, "u_Texture");
+	glUniform1i(texULoc, 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_ParticleTexture);
+
 	g_time += 0.001;
 
 	glDrawArrays(GL_TRIANGLES, 0, m_ParticleVertexCount);
@@ -757,6 +765,11 @@ void Renderer::DrawFragmentSandBox()
 	int timeLoc = glGetUniformLocation(shader, "u_Time");
 	glUniform1f(timeLoc, g_time);
 	g_time += 0.001;
+
+	int textureLoc = glGetUniformLocation(shader, "u_Texture");
+	glUniform1i(textureLoc, 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_RGBTexture);
 
 
 	glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -806,7 +819,7 @@ void Renderer::DrawVertexSandBox()
 
 void Renderer::DrawTextureSandBox()
 {
-	GLuint shader =  m_TextureSandboxShader;
+	GLuint shader = m_TextureSandboxShader;
 	glUseProgram(shader);
 
 	glEnable(GL_BLEND);
@@ -817,8 +830,8 @@ void Renderer::DrawTextureSandBox()
 	int textLoc = glGetAttribLocation(shader, "a_TexPos");
 	glEnableVertexAttribArray(textLoc);
 	glBindBuffer(GL_ARRAY_BUFFER, m_TextureSandboxVBO);
-	glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, sizeof(float)*5, 0);
-	glVertexAttribPointer(textLoc, 2, GL_FLOAT, GL_FALSE, sizeof(float)*5, (GLvoid*)(sizeof(float)*3));
+	glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 5, 0);
+	glVertexAttribPointer(textLoc, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 5, (GLvoid*)(sizeof(float) * 3));
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, m_0Texture);
@@ -832,9 +845,15 @@ void Renderer::DrawTextureSandBox()
 	glBindTexture(GL_TEXTURE_2D, m_4Texture);
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_2D, m_5Texture);
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_2D, m_MergedTexture);
 
-	GLuint samplerULoc = glGetUniformLocation(shader, "u_TexSampler");
-	glUniform1i(samplerULoc, (int)(g_time)%6);
+	int texID[] = { 0,1 };
+	GLuint samplerULoc = glGetUniformLocation(shader, "u_MultiTexSampler");
+	glUniform1iv(samplerULoc, 2, texID);
+
+	samplerULoc = glGetUniformLocation(shader, "u_TexSampler");
+	glUniform1i(samplerULoc, 6);
 	
 	//glActiveTexture(GL_TEXTURE0);
 	//glBindTexture(GL_TEXTURE_2D, m_CheckerBoardTexture);
@@ -842,6 +861,9 @@ void Renderer::DrawTextureSandBox()
 
 	GLuint repeatULoc = glGetUniformLocation(shader, "u_XYReapeat");
 	glUniform2f(repeatULoc, 4.f,4.f);
+
+	GLuint StepULoc = glGetUniformLocation(shader, "u_Step");
+	glUniform1f(StepULoc, (int)(g_time)%6);
 
 	g_time += 0.08;
 
