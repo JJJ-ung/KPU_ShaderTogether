@@ -21,6 +21,8 @@ public:
 	void DrawAlphaClear();
 	void DrawVertexSandBox();
 	void DrawTextureSandBox();
+	void DrawGridMesh();
+
 	void CreateTextures();
 	GLuint CreatePngTexture(char* filePath, GLuint samplingMethod);
 
@@ -33,6 +35,7 @@ private:
 	void GetGLPosition(float x, float y, float *newX, float *newY);
 	void Class0310();//데이터를 준비하고 올리는 작업을 할것이다.
 	void CreateParticleVBO(int numParticleCount);
+	void CreateGridMesh();
 	GLuint m_ParticleShader = -1;
 	GLuint m_ParticleVBO = -1;
 	GLuint m_ParticleVertexCount = -1;
@@ -88,5 +91,9 @@ private:
 	int frame = 0;
 	bool point = 0;
 	float g_time = 0;
+
+	GLuint gDummyVertexCount = 0;
+	GLuint VBO_DummyMesh = 0;
+	GLuint m_GridMeshShader = 0;
 };
 
