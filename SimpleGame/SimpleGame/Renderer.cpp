@@ -42,7 +42,7 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 	m_3Texture = CreatePngTexture("./0512_3.png", GL_NEAREST);
 	m_4Texture = CreatePngTexture("./0512_4.png", GL_NEAREST);
 	m_5Texture = CreatePngTexture("./0512_5.png", GL_NEAREST);
-	m_MergedTexture = CreatePngTexture("./0512_merged.png", GL_NEAREST);
+	m_MergedTexture = CreatePngTexture("./explosion.png", GL_NEAREST);
 
 	m_ParticleTexture = CreatePngTexture("./0517_Particle.png", GL_NEAREST);
 
@@ -864,6 +864,9 @@ void Renderer::DrawTextureSandBox()
 
 	GLuint StepULoc = glGetUniformLocation(shader, "u_Step");
 	glUniform1f(StepULoc, (int)(g_time)%6);
+
+	GLuint SeqNumLoc = glGetUniformLocation(shader, "u_SeqNum");
+	glUniform1f(SeqNumLoc, g_time * 10.0);
 
 	g_time += 0.08;
 
