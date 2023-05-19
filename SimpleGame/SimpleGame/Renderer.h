@@ -83,6 +83,8 @@ private:
 	GLuint m_5Texture = 0;
 	GLuint m_MergedTexture = 0;
 
+	GLuint m_ParticleTexture = 0;
+
 	int frame = 0;
 	bool point = 0;
 	float g_time = 0;
