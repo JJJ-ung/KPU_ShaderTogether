@@ -85,6 +85,8 @@ private:
 
 	GLuint m_ParticleTexture = 0;
 
+	GLuint m_ExplosionTexture = 0;
+
 	int frame = 0;
 	bool point = 0;
 	float g_time = 0;

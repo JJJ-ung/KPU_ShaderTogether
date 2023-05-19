@@ -46,6 +46,7 @@ void Renderer::Initialize(int windowSizeX, int windowSizeY)
 
 	m_ParticleTexture = CreatePngTexture("./0517_Particle.png", GL_NEAREST);
 
+	m_ExplosionTexture = CreatePngTexture("./explosion.png", GL_NEAREST);
 	if (m_SolidRectShader > 0 && m_VBORect > 0)
 	{
 		m_Initialized = true;
@@ -847,13 +848,15 @@ void Renderer::DrawTextureSandBox()
 	glBindTexture(GL_TEXTURE_2D, m_5Texture);
 	glActiveTexture(GL_TEXTURE6);
 	glBindTexture(GL_TEXTURE_2D, m_MergedTexture);
+	glActiveTexture(GL_TEXTURE7);
+	glBindTexture(GL_TEXTURE_2D, m_ExplosionTexture);
 
 	int texID[] = { 0,1 };
 	GLuint samplerULoc = glGetUniformLocation(shader, "u_MultiTexSampler");
 	glUniform1iv(samplerULoc, 2, texID);
 
 	samplerULoc = glGetUniformLocation(shader, "u_TexSampler");
-	glUniform1i(samplerULoc, 6);
+	glUniform1i(samplerULoc, 7);
 	
 	//glActiveTexture(GL_TEXTURE0);
 	//glBindTexture(GL_TEXTURE_2D, m_CheckerBoardTexture);
@@ -865,8 +868,10 @@ void Renderer::DrawTextureSandBox()
 	GLuint StepULoc = glGetUniformLocation(shader, "u_Step");
 	glUniform1f(StepULoc, (int)(g_time)%6);
 
-	g_time += 0.08;
 
+	GLuint SeqNumULoc = glGetUniformLocation(shader, "u_SeqNum");
+	glUniform1f(SeqNumULoc, (int)(g_time) % 6);
+	g_time += 0.005;
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
