@@ -6,6 +6,7 @@ uniform vec4 u_Color;
 uniform vec2 u_point;
 uniform vec2 u_points[3];
 uniform float u_Time;
+uniform sampler2D u_Texture;
 
 in vec2 v_UV;
 
@@ -93,9 +94,32 @@ void testgraph()
 	}
 }
 
+void RealFlag()
+{
+	float period = (v_UV.x + 1.0) * 1.0;
+	float xValue = v_UV.x*2.0*PI * period;
+	float yValue = ((1.0-v_UV.y)-0.5)*2.0;
+	float sinValue = 0.25*sin(xValue -10.0* u_Time);
+	if(sinValue*v_UV.x + 0.75 > yValue && sinValue*v_UV.x - 0.75 < yValue)
+	{
+		float vX = v_UV.x;
+		float yWidth = 1.5;// sinValue*v_UV.x + 0.75 - sinValue*v_UV.x - 0.75
+		float yDistance = yValue - (sinValue*v_UV.x - 0.75);
+		float vY = 1.0-yDistance / yWidth;
+		FragColor = texture(u_Texture , vec2(vX,vY));
+		//FragColor = vec4(vX, vY, 0 ,1);
+	}
+	else
+	{
+		FragColor = vec4(0);
+	}
+
+}
+
 void main()
 {
-	sinGraph();
+	RealFlag();
+	//sinGraph();
 	//sinGraph();
 	//UVTest();
 	//Circles();

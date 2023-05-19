@@ -10,6 +10,8 @@ uniform float u_Step;
 
 in vec2 v_TexPos;
 
+uniform float u_Step;
+
 void P1()
 {
 	float x = v_TexPos.x;
@@ -88,9 +90,34 @@ void MultiTexture()
 	FragColor = texture(u_TexSampler, newTexPos);
 }
 
+void MultiTexture1()
+{
+	float x = v_TexPos.x*2.0;
+	float y = v_TexPos.y;
+	vec2 newTexPos = vec2(x,y);
+	FragColor = texture(u_MultiTexSampler[int(floor(x))], fract(newTexPos));
+
+	//if(x>1.0)
+	//{
+	//	FragColor = texture(u_MultiTexSampler[1], fract(newTexPos));
+	//}
+	//else
+	//{
+	//	FragColor = texture(u_MultiTexSampler[0], fract(newTexPos));
+	//}
+}
+
+void MergedTexture()
+{
+	float x = v_TexPos.x;
+	float y = (v_TexPos.y+u_Step)/6;
+	vec2 newTexPos = vec2(x,y);
+	FragColor = texture(u_TexSampler, newTexPos);
+}
+
 void main()
 {
-	MultiTexture();
+	MergedTexture();
 }
 
 //float x = v_TexPos.x;
