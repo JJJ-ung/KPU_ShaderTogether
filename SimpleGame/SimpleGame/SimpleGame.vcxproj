@@ -174,7 +174,11 @@
   <ItemGroup>
     <None Include="Shaders\Alpha.fs" />
     <None Include="Shaders\Alpha.vs" />
+    <None Include="Shaders\DrawTexture.fs" />
+    <None Include="Shaders\DrawTexture.vs" />
     <None Include="Shaders\FragmentSandBox.vs" />
+    <None Include="Shaders\Grid.fs" />
+    <None Include="Shaders\Grid.vs" />
     <None Include="Shaders\particle.fs" />
     <None Include="Shaders\particle.vs" />
     <None Include="Shaders\FragmentSandBox.fs" />

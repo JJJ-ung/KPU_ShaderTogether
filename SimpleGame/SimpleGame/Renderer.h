@@ -23,6 +23,12 @@ public:
 	void DrawTextureSandBox();
 	void CreateTextures();
 	GLuint CreatePngTexture(char* filePath, GLuint samplingMethod);
+	void CreateFBOs();
+
+	void CreateGridMesh();
+	void DrawGridMesh();
+
+	void DrawTexture(float x, float y, float scaleX, float scaleY, GLuint texID);
 
 private:
 	void Initialize(int windowSizeX, int windowSizeY);
@@ -86,9 +92,29 @@ private:
 	GLuint m_ParticleTexture = 0;
 
 	GLuint m_ExplosionTexture = 0;
+	
+	GLuint m_GridMeshshader = 0;
+	GLuint m_GridMeshVBO = 0;
+	GLuint m_GridMeshVertexCount = 0;
+
+	//FBO
+	GLuint m_AFBOTexture = 0;
+	GLuint m_AFBOAttach_1_Texture = 0;
+	GLuint m_AFBOAttach_2_Texture = 0;
+	GLuint m_AFBOAttach_3_Texture = 0;
+	GLuint m_AFBOAttach_4_Texture = 0;
+
+	GLuint m_BFBOTexture = 0;
+	GLuint m_CFBOTexture = 0;
+	GLuint m_DepthRenderBuffer = 0;
+
+	GLuint m_A_FBO = 0;
 
 	int frame = 0;
 	bool point = 0;
 	float g_time = 0;
+
+	GLuint m_DrawTextureVBO = 0;
+	GLuint m_DrawTextureShader = 0;
 };
 
