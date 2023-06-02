@@ -1,6 +1,12 @@
 #version 330
 
-layout(location=0) out vec4 FragColor;
+layout(location=5) out vec4 FragColor;
+
+layout(location=0) out vec4 FragColor0;
+layout(location=1) out vec4 FragColor1;
+layout(location=2) out vec4 FragColor2;
+layout(location=3) out vec4 FragColor3;
+layout(location=4) out vec4 FragColor4;
 
 uniform vec4 u_Color;
 uniform vec2 u_point;
@@ -30,7 +36,7 @@ void Circles()
 {
 	vec2 newValue = v_UV - u_points[1];
 	float d = length(newValue);
-	FragColor = vec4(sin(10*d*PI));
+	FragColor4 = vec4(sin(10*d*PI));
 }
 
 void radar()
@@ -51,7 +57,7 @@ void radar()
 			obj_mask +=1.0;
 		}
 	}
-	FragColor = vec4(ring_mask*obj_mask+10*value);
+	FragColor2 = vec4(ring_mask*obj_mask+10*value);
 }
 
 void UVTest()
@@ -61,12 +67,12 @@ void UVTest()
 	float  sinResultX = pow(sin(v_UV.x * 10 * PI),powValue);
 	float  sinResultY = pow(sin(v_UV.y * 10 * PI),powValue);
 	float finalResult = max(sinResultX,sinResultY);
-	FragColor = vec4(finalResult);
+	FragColor0 = vec4(finalResult);
 }
 
 void sinGraph()
 {
-	FragColor = vec4(0);
+	FragColor3 = vec4(0);
 	for(int i=0; i<5; ++i)
 	{
 		float newTime = u_Time + i * 0.2;
@@ -76,7 +82,7 @@ void sinGraph()
 		float width = 0.005;
 		float newAlpha = 1.0-v_UV.x;
 		float newLines = sin(v_UV.x*200.0-newTime*50);
-		if(sinValue < newUV.y && sinValue+width > newUV.y) FragColor += vec4(1.0*newAlpha*newLines);
+		if(sinValue < newUV.y && sinValue+width > newUV.y) FragColor3 += vec4(1.0*newAlpha*newLines);
 	}
 }
 
@@ -106,21 +112,20 @@ void RealFlag()
 		float yWidth = 1.5;// sinValue*v_UV.x + 0.75 - sinValue*v_UV.x - 0.75
 		float yDistance = yValue - (sinValue*v_UV.x - 0.75);
 		float vY = 1.0-yDistance / yWidth;
-		FragColor = texture(u_Texture , vec2(vX,vY));
+		FragColor1 = texture(u_Texture , vec2(vX,vY));
 		//FragColor = vec4(vX, vY, 0 ,1);
 	}
 	else
 	{
-		FragColor = vec4(0);
+		FragColor1 = vec4(0);
 	}
-
 }
 
 void main()
 {
-	RealFlag();
-	//sinGraph();
-	//sinGraph();
-	//UVTest();
-	//Circles();
+	UVTest(); //->0
+	RealFlag(); //->1
+	radar(); // ->2
+	sinGraph(); //->3
+	Circles(); // ->4
 }

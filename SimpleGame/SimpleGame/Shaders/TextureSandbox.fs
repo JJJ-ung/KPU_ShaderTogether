@@ -10,6 +10,8 @@ in vec2 v_TexPos;
 
 uniform float u_Step;
 
+uniform float u_SeqNum;
+
 void P1()
 {
 	float x = v_TexPos.x;
@@ -104,9 +106,20 @@ void MergedTexture()
 	FragColor = texture(u_TexSampler, newTexPos);
 }
 
+void SpriteAnim()
+{
+	float seqNum = u_SeqNum;
+	float nx = float(int(seqNum) % 8);
+	float ny = floor(seqNum / 8.0);
+	float x = (nx + v_TexPos.x) / 8.0;
+	float y = (ny + v_TexPos.y) / 6.0;
+	vec2 newTexPos = vec2(x,y);
+	FragColor = texture(u_TexSampler, newTexPos);
+}
+
 void main()
 {
-	MergedTexture();
+	SpriteAnim();
 }
 
 //float x = v_TexPos.x;
